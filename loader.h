@@ -1,3 +1,7 @@
+#ifndef LOADER_H
+#define LOADER_H
+#include <stdint.h>
+#include <stdio.h>
 typedef unsigned int 	Elf32_Addr;
 typedef unsigned short 	Elf32_Half;
 typedef unsigned int 	Elf32_Off;
@@ -23,6 +27,8 @@ typedef struct {
 	Elf32_Half e_shstrndx;
 } Elf32_Ehdr;
 
+#define SHT_STRTAB 3
+
 typedef struct {
 	Elf32_Word sh_name;
 	Elf32_Word sh_type;
@@ -35,3 +41,32 @@ typedef struct {
 	Elf32_Word sh_addralign;
 	Elf32_Word sh_entsize;
 } Elf32_Shdr;
+
+#define PT_LOAD 1
+typedef struct {
+	Elf32_Word p_type;
+	Elf32_Off p_offset;
+	Elf32_Addr p_vaddr;
+	Elf32_Addr p_paddr;
+	Elf32_Word p_filesz;
+	Elf32_Word p_memsz;
+	Elf32_Word p_flags;
+	Elf32_Word p_align;
+} Elf32_Phdr;
+
+#define MAX_SEG_CNT 10
+typedef struct {
+	uint32_t offset;
+	uint32_t size;
+	char *content;
+} segment_t;
+
+extern segment_t segments[MAX_SEG_CNT];
+extern uint32_t segment_cnt;
+
+void ehdr_stats(Elf32_Ehdr *hdrp);
+int load_shdrs(FILE *file, Elf32_Ehdr *ehdr, Elf32_Shdr *shdrs);
+int load_strtab(FILE *file, Elf32_Shdr *shdr, char *buf);
+int load_phdrs(FILE *file, Elf32_Ehdr *shdr, Elf32_Phdr *phdrs);
+int load_psegs(FILE *file, Elf32_Ehdr *ehdr, Elf32_Phdr *phdrs);
+#endif
