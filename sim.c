@@ -34,7 +34,10 @@ int simulate(int entry)
 	return 0;
 }
 
+
 int decode(inst_t *inst)
 {
 	return 0;
 }
+
+

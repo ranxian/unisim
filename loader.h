@@ -56,8 +56,8 @@ typedef struct {
 
 #define MAX_SEG_CNT 10
 typedef struct {
-	uint32_t offset;
-	uint32_t size;
+	uint32_t offset; 	// base address
+	uint32_t size;		// size
 	char *content;
 } segment_t;
 
