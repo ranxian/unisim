@@ -5,6 +5,8 @@
 #include "sim.h"
 uint32_t segment_cnt;
 segment_t segments[MAX_SEG_CNT];
+int pc;
+int regs[REG_NUM];
 
 int main(int argc, char *argv[])
 {

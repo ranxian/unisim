@@ -2,6 +2,7 @@
 #define SIM_H
 #include "loader.h"
 #include <stdint.h>
+#pragma pack(1)
 /* program state register */
 typedef struct {
 	int N:1;

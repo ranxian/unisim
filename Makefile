@@ -1,6 +1,6 @@
 CC=gcc
 
-all: unisim test
+all: unisim test test_sim
 
 unisim:	main.c sim.o loader.o
 	$(CC) -o unisim main.c sim.o loader.o helper.o
@@ -16,6 +16,9 @@ helper.o: helper.c helper.h
 
 test: unisim hello
 	./unisim hello
+
+test_sim: sim.o test_sim.c
+	$(CC) -o test_sim test_sim.c sim.h
 
 clean:
 	rm *.o
