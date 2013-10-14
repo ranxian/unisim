@@ -3,6 +3,7 @@
 #include "loader.h"
 #include <stdint.h>
 
+/* program state register */
 typedef struct {
 	int N:1;
 	int Z:1;
@@ -14,8 +15,10 @@ typedef struct {
 	int T:1;
 	int mode:5;
 } stat_reg_t;
-typedef enum { DP_INST, MUL_INST, SDT_INST } inst_type_t;
+typedef enum { DP_INST, MUL_INST, BRX_INST, SDT_INST, HDT_INST, COND_INST,
+			   SOFTI_INST } inst_type_t;
 
+/* data process inst type */
 typedef struct {
 	union {
 		int imm:9;
@@ -39,6 +42,7 @@ typedef struct {
 	int b31:1;		// 0 | 1
 } dp_inst_t;
 
+/* multiply inst type */
 typedef struct {
 	int rm:5;
 	int b5:1;
@@ -58,11 +62,13 @@ typedef struct {
 	int b31:1; 		// 0
 } mul_inst_t;
 
+/* branch inst type */
 typedef struct {
 	int rm:5;
 	int bleft:27; 	// 0 0 0
 } brx_inst_t;
 
+/* single data transfer inst type */
 typedef struct {
 	union {
 		struct {
@@ -85,6 +91,7 @@ typedef struct {
 	int b31:1; 		// 1 | 0
 } sdt_inst_t;
 
+/* half word transfer inst type */
 typedef struct {
 	union {
 		int low_offset:5;
@@ -107,6 +114,7 @@ typedef struct {
 	int b31:1;		// 0
 } hdt_inst_t;
 
+/* condition inst type */
 typedef struct {
 	int offset:24;
 	int L:1;
@@ -125,9 +133,29 @@ typedef struct {
 	inst_type_t inst_type;
 	union {
 		dp_inst_t dp_inst;
+		mul_inst_t mul_inst;
+		brx_inst_t brx_inst;
+		sdt_inst_t sdt_inst;
+		hdt_inst_t hdt_inst;
+		cond_inst_t cond_inst;
+		softi_inst_t softi_inst;
 	} inst;
 } inst_t;
 
-int execute(Elf32_Ehdr *ehdr);
+#define REG_NUM 33
 
+extern int pc;
+extern int regs[REG_NUM];
+
+int simulate(int entry);
+
+int fetch(inst_t *inst);
+
+int decode(inst_t *inst);
+
+int execute(inst_t *inst);
+
+int memory(inst_t *inst);
+
+int writeback(inst_t *inst);
 #endif

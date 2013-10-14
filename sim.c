@@ -15,12 +15,12 @@ void fetch_dword(int addr, int *dest)
 	memcpy(dest, src, sizeof(int));
 }
 
-int execute(Elf32_Ehdr *ehdr)
+int simulate(int entry)
 {
 	int i;
 	int pc, inst;
 
-	pc = ehdr->e_entry;
+	pc = entry;
 	printdw(pc);
 
 	for (i = 0; i < 10; i++) {

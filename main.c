@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 	load_psegs(file, ehdrp, phdrs);
 
 	printf("%d\n", segment_cnt);
-	execute(ehdrp);
+	simulate(ehdrp->e_entry);
 	fclose(file);
 }
 
