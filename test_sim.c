@@ -14,5 +14,6 @@ int main()
 	printf("lsi_off_inst_t: %d\n", sizeof(lsi_off_inst_t));
 	printf("brlk_inst_t: %d\n", sizeof(brlk_inst_t));
 	printf("st_inst_t: %d\n", sizeof(st_inst_t));
+	printf("shift_ll_num: %d\n", SHIFT_LL);
 	inst_t inst;
 }

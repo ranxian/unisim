@@ -6,12 +6,19 @@
 typedef enum { D_IMM_SH_INST, D_REG_SH_INST, MUL_INST, BRX_INST,
 	           D_IMM_INST, LSR_OFF_INST, LSHWR_OFF_INST, LSHWI_OFF_INST,
 			   LSI_OFF_INST, ST_INST, BRLK_INST, UNKNOWN } inst_type_t;
+typedef enum { AND, XOR, SUB, RSB, ADD, ADC, SBC, RSC, CAND, CXOR, CSUB,
+			   CADD, ORR, MOV, CLB, MVN } opcode_t;
+typedef enum { SHIFT_LL, SHIFT_LR, SHIFT_AR, SHIFT_LP } shifttype_t;
+#define SHIFT_LL 0x0
+#define SHIFT_LR 0x1
+#define SHIFT_AR 0x2
+#define SHIFT_LP 0x3
 typedef struct {
 	uint32_t rm:5;
 	uint32_t b5:1;
-	uint32_t shift:2;
+	uint32_t shifttype:2;
 	uint32_t b8:1;
-	uint32_t shift_imm:5;
+	uint32_t imm:5;
 	uint32_t rd:5;
 	uint32_t rn:5;
 	uint32_t S:1;
@@ -24,7 +31,7 @@ typedef struct {
 typedef struct {
 	uint32_t rm:5;
 	uint32_t b5:1;
-	uint32_t shift:2;
+	uint32_t shifttype:2;
 	uint32_t b8:1;
 	uint32_t rs:5;
 	uint32_t rd:5;
@@ -77,7 +84,7 @@ typedef struct {
 typedef struct {
 	uint32_t rm:5;
 	uint32_t b5:1;
-	uint32_t shift:2;
+	uint32_t shifttype:2;
 	uint32_t b8:1;
 	uint32_t shift_imm:5;
 	uint32_t rd:5;
@@ -178,22 +185,10 @@ typedef struct {
 #define REG_NUM 33
 
 extern int pc;
+extern int lr;
 extern int regs[REG_NUM];
 extern inst_t ir;
 extern stat_reg_t cmsr;
-extern int opcode;
-extern int rn;
-extern int rd;
-extern int rs;
-extern int shift_imm;
-extern int rotate;
-extern int hioff;
-extern int cond;
-extern int signed_offset;
-extern int st_offset;
-extern int looff;
-extern int rm;
-extern int imm;
 
 int simulate(int entry);
 

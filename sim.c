@@ -1,10 +1,11 @@
 #include "sim.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "helper.h"
 #define UP(n, b) (((n) >> (b-1)) & 1)
 #define B(n, b) (((n) >> (b)) & 1)
-
+#define R(no) ((no) == 31 ? regs[no] + 4 : regs[no])
 void inst_info(inst_t *inst)
 {
 	switch(inst->type) {
@@ -80,7 +81,6 @@ int simulate(int entry)
 		writeback(&ir);
 		printf("inst: ");
 		printdw(ir.i);
-		pc += 4;
 	}
 	return 0;
 }
@@ -136,27 +136,110 @@ int decode(inst_t *inst)
 	}
 }
 
+int dp_inst_remain(opcode_t opcode, int *dst_reg, int oper1, int oper2, int setcc)
+{
+	uint32_t carry = cmsr.C;
+	switch(opcode) {
+		case AND:
+			*dst_reg = oper1 & oper2;
+			break;
+		case XOR:
+			*dst_reg = oper1 ^ oper2;
+			break;
+		case SUB:
+			*dst_reg = oper1 - oper2;
+			break;
+		case RSB:
+			*dst_reg = oper2 - oper1;
+			break;
+		case ADD:
+			*dst_reg = oper1 + oper2;
+			break;
+		case ADC:
+			*dst_reg = oper1 + oper2 + carry;
+			break;
+		case SBC:
+			*dst_reg = oper1 - oper2 + carry - 1;
+			break;
+		case RSC:
+			*dst_reg = oper2 - oper1 + carry - 1;
+			break;
+		case CAND:
+			// oper1 & oper2
+			break;
+		case CXOR:
+			// oper1 ^ oper2
+			break;
+		case CSUB:
+			// oper1 - oper2
+			break;
+		case CADD:
+			// oper1 + oper2
+			break;
+		case ORR:
+			*dst_reg = oper1 | oper2;
+			break;
+		case MOV:
+			*dst_reg = oper2;
+			break;
+		case CLB:
+			*dst_reg = oper1 & (~oper2);
+			break;
+		case MVN:
+			*dst_reg = ~oper2;
+			break;
+		default:
+			printf("unkown opcode, panic!\n");
+			exit(0);
+	}
+}
+
+int shifted(shifttype_t shifttype, int n1, int n2)
+{
+	switch(shifttype) {
+		case SHIFT_LL:
+			return n1 << n2;
+		case SHIFT_LR:
+			return ((unsigned)n1) >> n2;
+		case SHIFT_AR:
+			return n1 >> n2;
+		case SHIFT_LP:
+			return (((unsigned)n1) >> n2) | (n1 << (32-n2));
+		default:
+			printf("unknown shift type!\n");
+			exit(0);
+	}
+}
+
 int execute(inst_t *inst)
 {
 	int ii = inst->i;
-	int rn = bits(ii, 19, 23);
-	int rd = bits(ii, 14, 18);
-	int rs = bits(ii, 9, 13);
-	int rm = bits(ii, 0, 4);
+	int oper1, oper2;
+	int pc_changed = 0;
+
 	switch(inst->type) {
 		case D_IMM_SH_INST:
 			{
 				d_imm_sh_inst_t ninst = *(d_imm_sh_inst_t *)&ii;
+				oper1 = R(ninst.rn);
+				oper2 = shifted(ninst.shifttype, R(ninst.rm), ninst.imm);
+
+				dp_inst_remain(ninst.opcode, &regs[ninst.rd],  oper1, oper2, ninst.S);
 				break;
 			}
 		case D_REG_SH_INST:
 			{
 				d_reg_sh_inst_t ninst = *(d_reg_sh_inst_t *)&ii;
+				oper1 = R(ninst.rn);
+				oper2 = shifted(ninst.shifttype, R(ninst.rm), R(ninst.rs));
+
+				dp_inst_remain(ninst.opcode, &regs[ninst.rd], oper1, oper2, ninst.S);
 				break;
 			}
 		case MUL_INST:
 			{
 				mul_inst_t ninst = *(mul_inst_t *)&ii;
+				regs[ninst.rd] = R(ninst.rn) * R(ninst.rm) + R(ninst.rs);
 				break;
 			}
 		case BRX_INST:
@@ -167,11 +250,20 @@ int execute(inst_t *inst)
 		case D_IMM_INST:
 			{
 				d_imm_inst_t ninst = *(d_imm_inst_t *)&ii;
+				oper1 = R(ninst.rn);
+				oper2 = shifted(SHIFT_LP, ninst.imm, ninst.rotate);
+
+				dp_inst_remain(ninst.opcode, &regs[ninst.rd], oper1, oper2, ninst.S);
 				break;
 			}
 		case LSR_OFF_INST:
 			{
 				lsr_off_inst_t ninst = *(lsr_off_inst_t *)&ii;
+				if (ninst.L == 1) {
+					lr = pc + 4;
+					pc = R(ninst.rm);
+					pc_changed = 1;
+				}
 				break;
 			}
 		case LSHWR_OFF_INST:
@@ -206,6 +298,7 @@ int execute(inst_t *inst)
 			}
 		default: break;
 	}
+	if (!pc_changed) pc += 4;
 	return 0;
 }
 

@@ -7,6 +7,7 @@ uint32_t segment_cnt;
 segment_t segments[MAX_SEG_CNT];
 int pc;
 inst_t ir;
+int lr;
 int regs[REG_NUM];
 stat_reg_t cmsr;
 
