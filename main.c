@@ -6,7 +6,9 @@
 uint32_t segment_cnt;
 segment_t segments[MAX_SEG_CNT];
 int pc;
+inst_t ir;
 int regs[REG_NUM];
+stat_reg_t cmsr;
 
 int main(int argc, char *argv[])
 {
@@ -17,7 +19,6 @@ int main(int argc, char *argv[])
 	Elf32_Ehdr *ehdrp = &ehdr;
 
 	fread(ehdrp, 1, sizeof(ehdr), file);
-
 	ehdr_stats(ehdrp);
 	load_shdrs(file, ehdrp, shdrs);
 	load_phdrs(file, ehdrp, phdrs);

@@ -3,8 +3,9 @@
 #include "loader.h"
 #include <stdint.h>
 
-typedef enum { D_IMM_SH_INST, D_REG_SH_INST, MUL_INST, BRX_INST, SDT_INST, ST_INST,
-			   BRLK_INST, LSI_OFFSET_INST, LSHWI_OFFSET_INST } inst_type_t;
+typedef enum { D_IMM_SH_INST, D_REG_SH_INST, MUL_INST, BRX_INST,
+	           D_IMM_INST, LSR_OFF_INST, LSHWR_OFF_INST, LSHWI_OFF_INST,
+			   LSI_OFF_INST, ST_INST, BRLK_INST, UNKNOWN } inst_type_t;
 typedef struct {
 	uint32_t rm:5;
 	uint32_t b5:1;
@@ -89,7 +90,7 @@ typedef struct {
 	uint32_t b29:1;
 	uint32_t b30:1;
 	uint32_t b31:1;
-} lsr_offset_inst_t;
+} lsr_off_inst_t;
 
 typedef struct {
 	uint32_t rm:5;
@@ -108,7 +109,7 @@ typedef struct {
 	uint32_t b29:1;
 	uint32_t b30:1;
 	uint32_t b31:1;
-} lshwr_offset_inst_t;
+} lshwr_off_inst_t;
 
 typedef struct {
 	uint32_t loffset:5;
@@ -127,7 +128,7 @@ typedef struct {
 	uint32_t b29:1;
 	uint32_t b30:1;
 	uint32_t b31:1;
-} lshwi_offset_inst_t;
+} lshwi_off_inst_t;
 
 typedef struct {
 	uint32_t himm:14;
@@ -141,7 +142,7 @@ typedef struct {
 	uint32_t b29:1;
 	uint32_t b30:1;
 	uint32_t b31:1;
-} lsi_offset_inst_t;
+} lsi_off_inst_t;
 
 typedef struct {
 	uint32_t offset:24;
@@ -170,13 +171,16 @@ typedef struct {
 } stat_reg_t;
 
 typedef struct {
-	inst_type_t inst_type;
+	inst_type_t type;
+	int i;
 } inst_t;
 
 #define REG_NUM 33
 
 extern int pc;
 extern int regs[REG_NUM];
+extern inst_t ir;
+extern stat_reg_t cmsr;
 
 int simulate(int entry);
 
