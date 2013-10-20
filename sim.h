@@ -181,6 +181,19 @@ extern int pc;
 extern int regs[REG_NUM];
 extern inst_t ir;
 extern stat_reg_t cmsr;
+extern int opcode;
+extern int rn;
+extern int rd;
+extern int rs;
+extern int shift_imm;
+extern int rotate;
+extern int hioff;
+extern int cond;
+extern int signed_offset;
+extern int st_offset;
+extern int looff;
+extern int rm;
+extern int imm;
 
 int simulate(int entry);
 

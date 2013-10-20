@@ -138,6 +138,74 @@ int decode(inst_t *inst)
 
 int execute(inst_t *inst)
 {
+	int ii = inst->i;
+	int rn = bits(ii, 19, 23);
+	int rd = bits(ii, 14, 18);
+	int rs = bits(ii, 9, 13);
+	int rm = bits(ii, 0, 4);
+	switch(inst->type) {
+		case D_IMM_SH_INST:
+			{
+				d_imm_sh_inst_t ninst = *(d_imm_sh_inst_t *)&ii;
+				break;
+			}
+		case D_REG_SH_INST:
+			{
+				d_reg_sh_inst_t ninst = *(d_reg_sh_inst_t *)&ii;
+				break;
+			}
+		case MUL_INST:
+			{
+				mul_inst_t ninst = *(mul_inst_t *)&ii;
+				break;
+			}
+		case BRX_INST:
+			{
+				brx_inst_t ninst = *(brx_inst_t *)&ii;
+				break;
+			}
+		case D_IMM_INST:
+			{
+				d_imm_inst_t ninst = *(d_imm_inst_t *)&ii;
+				break;
+			}
+		case LSR_OFF_INST:
+			{
+				lsr_off_inst_t ninst = *(lsr_off_inst_t *)&ii;
+				break;
+			}
+		case LSHWR_OFF_INST:
+			{
+				lshwr_off_inst_t ninst = *(lshwr_off_inst_t *)&ii;
+				break;
+			}
+		case LSHWI_OFF_INST:
+			{
+				lshwi_off_inst_t ninst = *(lshwi_off_inst_t *)&ii;
+				break;
+			}
+		case LSI_OFF_INST:
+			{
+				lsi_off_inst_t ninst = *(lsi_off_inst_t *)&ii;
+				break;
+			}
+		case ST_INST:
+			{
+				st_inst_t ninst = *(st_inst_t *)&ii;
+				break;
+			}
+		case BRLK_INST:
+			{
+				brlk_inst_t ninst = *(brlk_inst_t *)&ii;
+				break;
+			}
+		case UNKNOWN:
+			{
+				printf("unknown inst encountered");
+				return -1;
+			}
+		default: break;
+	}
 	return 0;
 }
 
