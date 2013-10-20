@@ -5,6 +5,38 @@
 #define UP(n, b) (((n) >> (b-1)) & 1)
 #define B(n, b) (((n) >> (b)) & 1)
 
+void inst_info(inst_t *inst)
+{
+	switch(inst->type) {
+		case D_IMM_SH_INST:
+		   	printf("d_imm_sh_inst\n"); break;
+		case D_REG_SH_INST:
+			printf("d_reg_sh_inst\n"); break;
+		case MUL_INST:
+			printf("mul_inst\n"); break;
+		case BRX_INST:
+			printf("brx_inst\n"); break;
+		case D_IMM_INST:
+			printf("d_imm_inst\n"); break;
+		case LSR_OFF_INST:
+			printf("lst_off_inst"); break;
+		case LSHWR_OFF_INST:
+			printf("lshwr_off_inst\n"); break;
+		case LSHWI_OFF_INST:
+			printf("lshwi_off_inst\n"); break;
+		case LSI_OFF_INST:
+			printf("lsi_off_inst\n"); break;
+		case ST_INST:
+			printf("st_inst\n"); break;
+		case BRLK_INST:
+			printf("brlk_inst\n"); break;
+		case UNKNOWN:
+			printf("unknown\n"); break;
+		default:
+			printf("inst_info panic\n"); break;
+	}
+}
+
 uint32_t bits(int dword, int start, int end)
 {
 	int i;
@@ -12,7 +44,7 @@ uint32_t bits(int dword, int start, int end)
 	for (i = start; i <= end; i++) {
 		res |= 1 << i;
 	}
-	return dword & res;
+	return (dword & res) >> start;
 }
 
 void fetch_dword(int addr, int *dest)
@@ -39,6 +71,7 @@ int simulate(int entry)
 		fetch_dword(pc, &ir.i);
 		// decode
 		decode(&ir);
+		inst_info(&ir);
 		// execute
 		execute(&ir);
 		// memory
@@ -58,7 +91,7 @@ int decode(inst_t *inst)
 	uint32_t f29_31 = bits(ii, 29, 31);
 	uint32_t f26_28 = bits(ii, 26, 28);
 	uint32_t f19_23 = bits(ii, 19, 23);
-	uint32_t f14_f18 = bits(ii, 14, 18);
+	uint32_t f14_18 = bits(ii, 14, 18);
 	uint32_t f5_8 = bits(ii, 5, 8);
 	uint32_t f9_13 = bits(ii, 9, 13);
 
@@ -73,7 +106,7 @@ int decode(inst_t *inst)
 					inst->type = MUL_INST;
 			} else if (f26_28 == 0x4) {
 				if (B(ii, 25) == 0 && f19_23 == 0x1f &&
-						f14_f18 == 0x1f	&& f9_13 == 0 && f5_8 == 0x9)
+						f14_18 == 0x1f	&& f9_13 == 0 && f5_8 == 0x9)
 					inst->type = BRX_INST;
 			}
 			break;
