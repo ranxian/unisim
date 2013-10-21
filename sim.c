@@ -102,6 +102,7 @@ int dp_inst_remain(opcode_t opcode, int rd, int oper1, int oper2, int setcc)
 	uint32_t carry = cmsr.C;
 	int tmp_result;
 	int V = 0, C = 0;
+	long long long_res;
 	switch(opcode) {
 		case AND:
 			tmp_result = oper1 & oper2;
@@ -111,21 +112,27 @@ int dp_inst_remain(opcode_t opcode, int rd, int oper1, int oper2, int setcc)
 			break;
 		case SUB:
 			tmp_result = oper1 - oper2;
+			long_res = (unsigned)(oper1 - oper2);
 			break;
 		case RSB:
 			tmp_result = oper2 - oper1;
+			long_res = (unsigned)(oper2 - oper1);
 			break;
 		case ADD:
 			tmp_result = oper1 + oper2;
+			long_res = (unsigned)(oper1 + oper2);
 			break;
 		case ADC:
 			tmp_result = oper1 + oper2 + carry;
+			long_res = (unsigned)(oper1 + oper2 + carry);
 			break;
 		case SBC:
 			tmp_result = oper1 - oper2 + carry - 1;
+			long_res = (unsigned)(oper1 - oper2 + carry - 1);
 			break;
 		case RSC:
 			tmp_result = oper2 - oper1 + carry - 1;
+			long_res = (unsigned)(oper2 - oper1 + carry - 1);
 			break;
 		case CAND:
 			tmp_result = oper1 & oper2;
@@ -135,9 +142,11 @@ int dp_inst_remain(opcode_t opcode, int rd, int oper1, int oper2, int setcc)
 			break;
 		case CSUB:
 			tmp_result = oper1 - oper2;
+			long_res = (unsigned)(oper1 - oper2);
 			break;
 		case CADD:
 			tmp_result = oper1 + oper2;
+			long_res = (unsigned)(oper1 + oper2);
 			break;
 		case ORR:
 			tmp_result = oper1 | oper2;
@@ -167,6 +176,18 @@ int dp_inst_remain(opcode_t opcode, int rd, int oper1, int oper2, int setcc)
 			if (tmp_result == 0)
 				cmsr.Z = 1;
 			cmsr.N = B(tmp_result, 31);
+			if (B(oper1, 31) == 1 && B(oper2, 31) == 0 && B(tmp_result, 31) == 0)
+				cmsr.V = 1;
+			else if (B(oper1, 31) == 0 && B(oper2, 31) == 1 && B(tmp_result, 31) == 1)
+				cmsr.V = 1;
+			else
+				cmsr.V = 0;
+			if (opcode == ADD || opcode == SUB || opcode == RSB || opcode == ADC
+					|| opcode == SBC || opcode == RSC || opcode == CSUB || opcode == CADD) {
+				if (long_res & 0xffffffff00000000 != 0)
+					cmsr.C = 1;
+				else cmsr.C = 0;
+			}
 		}
 	}
 }
