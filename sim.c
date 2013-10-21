@@ -198,19 +198,41 @@ int shifted(shifttype_t shifttype, int n1, int n2, int setC)
 
 	switch(shifttype) {
 		case SHIFT_LL:
-			res = n1 << n2;
-			if (n2) C = B(n1, 32 - n2);
+			if (n2 == 32) {
+				res = 0;
+			} else if (n2 > 32) {
+				res = 0;
+			} else {
+				res = n1 << n2;
+				if (n2) C = B(n1, 32 - n2);
+			}
 			break;
 		case SHIFT_LR:
-			res = ((unsigned)n1) >> n2;
-			if (n2) C = B(n1, n2-1);
+			if (n2 == 32) {
+				res = 0;
+			} else if (n2 > 32) {
+				res = 0;
+			} else {
+				res = ((unsigned)n1) >> n2;
+				if (n2) C = B(n1, n2-1);
+			}
 			break;
 		case SHIFT_AR:
-			res = n1 >> n2;
-			if (n2) C = B(n1, n2-1);
+			if (n2 >= 32) {
+				res = n1 >> 31;
+			} else {
+				res = n1 >> n2;
+				if (n2) C = B(n1, n2-1);
+			}
 			break;
 		case SHIFT_LP:
-			return (((unsigned)n1) >> n2) | (n1 << (32-n2));
+			if (n2 == 32) {
+				res = n1;
+			} else {
+				n2 %= 32;
+				res = (((unsigned)n1) >> n2) | (n1 << (32-n2));
+			}
+			break;
 		default:
 			printf("unknown shift type!\n");
 			exit(0);
