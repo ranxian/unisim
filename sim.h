@@ -3,11 +3,11 @@
 #include "loader.h"
 #include <stdint.h>
 
-typedef enum { D_IMM_SH_INST, D_REG_SH_INST, MUL_INST, BRX_INST,
-	           D_IMM_INST, LSR_OFF_INST, LSHWR_OFF_INST, LSHWI_OFF_INST,
+typedef enum { D_IMM_SH_INST, D_REG_SH_INST, D_IMM_INST, MUL_INST, BRX_INST,
+	           LSR_OFF_INST, LSHWR_OFF_INST, LSHWI_OFF_INST,
 			   LSI_OFF_INST, ST_INST, BRLK_INST, UNKNOWN } inst_type_t;
 typedef enum { AND, XOR, SUB, RSB, ADD, ADC, SBC, RSC, CAND, CXOR, CSUB,
-			   CADD, ORR, MOV, CLB, MVN } opcode_t;
+			   CADD, ORR, MOV, CLB, MVN, NOP } opcode_t;
 typedef enum { SHIFT_LL, SHIFT_LR, SHIFT_AR, SHIFT_LP } shifttype_t;
 #define SHIFT_LL 0x0
 #define SHIFT_LR 0x1
@@ -86,7 +86,7 @@ typedef struct {
 	uint32_t b5:1;
 	uint32_t shifttype:2;
 	uint32_t b8:1;
-	uint32_t shift_imm:5;
+	uint32_t imm:5;
 	uint32_t rd:5;
 	uint32_t rn:5;
 	uint32_t L:1;
@@ -184,8 +184,6 @@ typedef struct {
 
 #define REG_NUM 33
 
-extern int pc;
-extern int lr;
 extern int regs[REG_NUM];
 extern inst_t ir;
 extern stat_reg_t cmsr;

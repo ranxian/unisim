@@ -8,6 +8,8 @@
 #define R(no) ((no) == 31 ? regs[no] + 4 : regs[no])
 #define IS_LOG(opcode) (opcode == AND || opcode == XOR || opcode == CAND || opcode == CXOR \
 		|| opcode == ORR || opcode == MOV || opcode == CLB || opcode == MVN)
+#define PC (regs[31])
+#define LR (regs[30])
 
 void fetch_dword(int addr, int *dest)
 {
@@ -25,12 +27,12 @@ int simulate(int entry)
 {
 	int i;
 
-	pc = entry;
-	printdw(pc);
+	PC = entry;
+	printdw(PC);
 
 	for (i = 0; i < 10; i++) {
 		// fetch
-		fetch_dword(pc, &ir.i);
+		fetch_dword(PC, &ir.i);
 		// decode
 		decode(&ir);
 		inst_info(&ir);
@@ -192,6 +194,22 @@ int dp_inst_remain(opcode_t opcode, int rd, int oper1, int oper2, int setcc)
 	}
 }
 
+int ls_inst_remain(int inst, int offset)
+{
+	// hack the inst to be like a lsi_off_inst_t, because except the offset the rest are the same
+	lsi_off_inst_t ninst = *(lsi_off_inst_t *)&inst;
+	int addr = R(ninst.rn);
+	int baseoff = addr;
+	if (ninst.U) {
+		baseoff += offset;
+	} else {
+		baseoff -= offset;
+	}
+	if (ninst.P) {
+		addr = baseoff;
+	}
+}
+
 int shifted(shifttype_t shifttype, int n1, int n2, int setC)
 {
 	int res, C = 0;
@@ -247,7 +265,7 @@ int execute(inst_t *inst)
 {
 	int ii = inst->i;
 	int oper1, oper2;
-	int pc_changed = 0;
+	int old_pc = PC;
 	int shift_setC = 0;
 
 	switch(inst->type) {
@@ -272,12 +290,20 @@ int execute(inst_t *inst)
 		case MUL_INST:
 			{
 				mul_inst_t ninst = *(mul_inst_t *)&ii;
-				regs[ninst.rd] = R(ninst.rn) * R(ninst.rm) + R(ninst.rs);
+				int tmp = R(ninst.rn) * R(ninst.rm) + R(ninst.rs);
+				if (tmp == 0)
+					cmsr.Z = 1;
+				cmsr.N = B(tmp, 31);
+				regs[ninst.rd] = tmp;
 				break;
 			}
 		case BRX_INST:
 			{
 				brx_inst_t ninst = *(brx_inst_t *)&ii;
+				if (ninst.L)
+					LR = R(31);
+				PC = R(ninst.rm);
+				regs[30] &= 0xfffffffc;
 				break;
 			}
 		case D_IMM_INST:
@@ -292,11 +318,8 @@ int execute(inst_t *inst)
 		case LSR_OFF_INST:
 			{
 				lsr_off_inst_t ninst = *(lsr_off_inst_t *)&ii;
-				if (ninst.L == 1) {
-					lr = pc + 4;
-					pc = R(ninst.rm);
-					pc_changed = 1;
-				}
+				int offset = shifted(ninst.shifttype, R(ninst.rm), R(ninst.imm), 1);
+				ls_inst_remain(ii, offset);
 				break;
 			}
 		case LSHWR_OFF_INST:
@@ -312,6 +335,8 @@ int execute(inst_t *inst)
 		case LSI_OFF_INST:
 			{
 				lsi_off_inst_t ninst = *(lsi_off_inst_t *)&ii;
+				int offset = ninst.himm;
+				ls_inst_remain(ii, offset);
 				break;
 			}
 		case ST_INST:
@@ -331,7 +356,8 @@ int execute(inst_t *inst)
 			}
 		default: break;
 	}
-	if (!pc_changed) pc += 4;
+	if (PC == old_pc) PC += 4;
+
 	return 0;
 }
 
