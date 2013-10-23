@@ -3,7 +3,7 @@
 Fetch:
 	inst_type;
 	split_inst;
-	pc += 4;
+	valP = pc + 4;
 Decode:
 	op1 = rn;
 	op2 = rm <shifttype> shift_imm;
@@ -16,6 +16,7 @@ Execute:
 Memory:
 
 Write-back:
+	pc = valP;
 	if (!LOG_INST) 
 		rd = valE;
 		if (rd == 31 && S) cmsr = smsr;
@@ -27,7 +28,7 @@ Write-back:
 Fetch:
 	inst_type;
 	split_inst;
-	pc += 4;
+	valP = pc + 4;
 Decode:
 	op1 = rn;
 	op2 = rm;
@@ -37,6 +38,7 @@ Execute:
 Memory:
 
 Write-back:
+	pc = valP;
 	rd = valE;
 
 #### BRX_INST:
@@ -44,7 +46,7 @@ Write-back:
 Fetch:
 	inst_type;
 	split_inst;
-	pc += 4;
+	valP = pc + 4;
 Decode:
 	op2 = rm;
 Execute:
@@ -52,9 +54,10 @@ Execute:
 Memory:
 
 Write-back:
+	pc = valP;
 	if (L)
-		lr = pc;
-		pc  = valE;
+		lr = valP;
+		pc = valE;
 		regs[30, 1:0] = 0;
 	else pc = valE;
 
@@ -72,8 +75,8 @@ Execute:
 Memory:
 	addr = P ? valE : rn;
 	if (load)  valM = B ? M[addr, 1] : M[addr, 4];
-	if (write) B ? M[addr, 1] = regs[rn] : M[addr, 4] = regs[rn];
-Execute:
+	if (write) B ? M[addr, 1] = valD : M[addr, 4] = valD;
+Write-back:
 	if (load) rd = valM;
 	if (!P || W) rn = valE; 
 
@@ -89,10 +92,10 @@ Execute:
 	if (U) valE = op1 + op2;
 	else valE = op1 - op2;
 Memory:
-	addr = P ? valE : rn;
-	if (load) //;
-	if (write) //;
-Execute:
+	addr = P ? valE : op1;
+	if (load) valM = M[addr, 1, 2];
+	if (write) M[addr, 1, 2] = valD;
+Write-back:
 	if (load) rd = valM;
 	if (!P || W) rn = valE;
 
@@ -107,8 +110,8 @@ Execute:
 	valE = op1 + op2;
 Memory:
 	//
-Execute:
-	if (L) lr = pc; pc = valE;
+Write-back:
+	if (L) lr = valP; pc = valE;
 	else pc = valE;
 
 #### ST_INST
@@ -127,4 +130,4 @@ Write-back:
 	CMSR[4:0] = 10011
 	CMSR[5] = 0
 	CMSR[7] = 1
-	PC = 0x8
+	pc = 0x8
