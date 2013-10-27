@@ -9,10 +9,6 @@ typedef enum { D_IMM_SH_INST, D_REG_SH_INST, D_IMM_INST, MUL_INST, BRX_INST,
 typedef enum { AND, XOR, SUB, RSB, ADD, ADC, SBC, RSC, CAND, CXOR, CSUB,
 			   CADD, ORR, MOV, CLB, MVN, NOP } opcode_t;
 typedef enum { SHIFT_LL, SHIFT_LR, SHIFT_AR, SHIFT_LP } shifttype_t;
-#define SHIFT_LL 0x0
-#define SHIFT_LR 0x1
-#define SHIFT_AR 0x2
-#define SHIFT_LP 0x3
 typedef struct {
 	uint32_t rm:5;
 	uint32_t b5:1;
@@ -182,21 +178,49 @@ typedef struct {
 	int i;
 } inst_t;
 
+typedef struct {
+	inst_type_t insttype;
+	opcode_t 	opcode;
+	int 		rn;
+	int 		rd;
+	int 		rm;
+	int 		rs;
+	int 		shift_imm;
+	shifttype_t	shifttype;
+	int 		rotate;
+	int 		cond;
+	int 		imm9;
+	int 		hioff;
+	int 		lowoff;
+	int 		imm14;
+	int 		imm24;
+	int 		S;
+	int 		P;
+	int 		U;
+	int 		B;
+	int 		W;
+	int 		L;
+	int 		H;
+	int 		valP;
+} d_reg_t;
+
 #define REG_NUM 33
 
 extern int regs[REG_NUM];
-extern inst_t ir;
+extern int ir;
 extern stat_reg_t cmsr;
+extern stat_reg_t temp_cmsr;
+extern d_reg_t d_reg, D_reg;
 
 int simulate(int entry);
 
-int fetch(inst_t *inst);
+int fetch();
 
-int decode(inst_t *inst);
+int decode();
 
-int execute(inst_t *inst);
+int execute();
 
-int memory(inst_t *inst);
+int memory();
 
-int writeback(inst_t *inst);
+int writeback();
 #endif

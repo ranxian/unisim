@@ -15,9 +15,9 @@ void printdw(int dword)
 	printf("\n");
 }
 
-void inst_info(inst_t *inst)
+void inst_info()
 {
-	switch(inst->type) {
+	switch(d_reg.insttype) {
 		case D_IMM_SH_INST:
 			printf("d_imm_sh_inst\n"); break;
 		case D_REG_SH_INST:

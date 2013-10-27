@@ -6,10 +6,11 @@
 uint32_t segment_cnt;
 segment_t segments[MAX_SEG_CNT];
 int pc;
-inst_t ir;
+int ir;
 int lr;
 int regs[REG_NUM];
-stat_reg_t cmsr;
+stat_reg_t cmsr, temp_cmsr;
+d_reg_t d_reg, D_reg;
 
 int main(int argc, char *argv[])
 {

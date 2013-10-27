@@ -3,13 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "helper.h"
-#define UP(n, b) (((n) >> (b-1)) & 1)
-#define B(n, b) (((n) >> (b)) & 1)
-#define R(no) ((no) == 31 ? regs[no] + 4 : regs[no])
-#define IS_LOG(opcode) (opcode == AND || opcode == XOR || opcode == CAND || opcode == CXOR \
-		|| opcode == ORR || opcode == MOV || opcode == CLB || opcode == MVN)
-#define PC (regs[31])
-#define LR (regs[30])
+#include "shifter.h"
 
 void fetch_dword(int addr, int *dest)
 {
@@ -32,70 +26,86 @@ int simulate(int entry)
 
 	for (i = 0; i < 10; i++) {
 		// fetch
-		fetch_dword(PC, &ir.i);
-		// decode
-		decode(&ir);
-		inst_info(&ir);
-		// execute
-		execute(&ir);
-		// memory
-		memory(&ir);
-		// write-back
-		writeback(&ir);
+		fetch_dword(PC, &ir);
 		printf("inst: ");
-		printdw(ir.i);
+		printdw(ir);
+		fetch();
+		inst_info();
+		// decode
+		decode();
+		// execute
+		execute();
+		// memory
+		memory();
+		// write-back
+		writeback();
 	}
 	return 0;
 }
 
-int decode(inst_t *inst)
+int fetch()
 {
-	int ii = inst->i;
+	int ii = ir;
 	uint32_t f29_31 = bits(ii, 29, 31);
-	uint32_t f26_28 = bits(ii, 26, 28);
+	uint32_t f25_28 = bits(ii, 26, 28);
 	uint32_t f19_23 = bits(ii, 19, 23);
 	uint32_t f14_18 = bits(ii, 14, 18);
 	uint32_t f5_8 = bits(ii, 5, 8);
 	uint32_t f9_13 = bits(ii, 9, 13);
 
+	d_reg.opcode = f25_28;
+	d_reg.rn = f19_23;
+	d_reg.rd = f14_18;
+	d_reg.shift_imm = f9_13;
+	d_reg.shifttype = bits(ii, 6, 7);
+	d_reg.rm = bits(ii, 0, 4);
+	d_reg.rotate = f9_13;
+	d_reg.imm9 = bits(ii, 0, 8);
+	d_reg.hioff = f9_13;
+	d_reg.lowoff = bits(ii, 0, 4);
+	d_reg.imm14 = bits(ii, 0, 13);
+	d_reg.cond = f25_28;
+	d_reg.imm24 = bits(ii, 0, 23);
+
 	switch(f29_31) {
 		case 0x0:
-			if (B(ii, 8) == 0 && B(ii, 5) == 0)
-				inst->type = D_IMM_SH_INST;
+			if (B(ii, 8) == 0 && B(ii, 5) == 0) {
+				d_reg.insttype = D_IMM_SH_INST;
+			}
 			else if (B(ii, 8) == 0 && B(ii, 5) == 1)
-				inst->type = D_REG_SH_INST;
-			if (f26_28 == 0) {
+				d_reg.insttype = D_REG_SH_INST;
+			if (B(ii, 28)) {
 				if (f5_8 == 0x9)
-					inst->type = MUL_INST;
-			} else if (f26_28 == 0x4) {
+					d_reg.insttype = MUL_INST;
+			} else if (B(ii, 28) == 1) {
 				if (B(ii, 25) == 0 && f19_23 == 0x1f &&
 						f14_18 == 0x1f	&& f9_13 == 0 && f5_8 == 0x9)
-					inst->type = BRX_INST;
+					d_reg.insttype = BRX_INST;
 			}
 			break;
 		case 0x1:
-			inst->type = D_IMM_INST;
+			d_reg.insttype = D_IMM_INST;
 			break;
 		case 0x2:
 			if (B(ii, 5) == 0 && B(ii, 8) == 0)
-				inst->type = LSR_OFF_INST;
+				d_reg.insttype = LSR_OFF_INST;
 			else if (B(ii, 26) == 0 && f9_13 == 0 && B(ii, 5) == 1 && B(ii, 8) == 1)
-				inst->type = LSHWR_OFF_INST;
+				d_reg.insttype = LSHWR_OFF_INST;
 			else if (B(ii, 26) == 1 && B(ii, 5) == 1 && B(ii, 8) == 1)
-				inst->type = LSHWI_OFF_INST;
+				d_reg.insttype = LSHWI_OFF_INST;
 			break;
 		case 0x3:
-			inst->type = LSI_OFF_INST;
+			d_reg.insttype = LSI_OFF_INST;
 			break;
 		case 0x5:
-			inst->type = BRLK_INST;
+			d_reg.insttype = BRLK_INST;
 			break;
 		case 0x7:
 			if (bits(ii, 24, 28) == 0x1f)
-				inst->type = ST_INST;
+				d_reg.insttype = ST_INST;
 			break;
 		default:
-			inst->type = UNKNOWN;
+			d_reg.insttype = UNKNOWN;
 	}
 }
 
@@ -210,59 +220,8 @@ int ls_inst_remain(int inst, int offset)
 	}
 }
 
-int shifted(shifttype_t shifttype, int n1, int n2, int setC)
-{
-	int res, C = 0;
-
-	switch(shifttype) {
-		case SHIFT_LL:
-			if (n2 == 32) {
-				res = 0;
-			} else if (n2 > 32) {
-				res = 0;
-			} else {
-				res = n1 << n2;
-				if (n2) C = B(n1, 32 - n2);
-			}
-			break;
-		case SHIFT_LR:
-			if (n2 == 32) {
-				res = 0;
-			} else if (n2 > 32) {
-				res = 0;
-			} else {
-				res = ((unsigned)n1) >> n2;
-				if (n2) C = B(n1, n2-1);
-			}
-			break;
-		case SHIFT_AR:
-			if (n2 >= 32) {
-				res = n1 >> 31;
-			} else {
-				res = n1 >> n2;
-				if (n2) C = B(n1, n2-1);
-			}
-			break;
-		case SHIFT_LP:
-			if (n2 == 32) {
-				res = n1;
-			} else {
-				n2 %= 32;
-				res = (((unsigned)n1) >> n2) | (n1 << (32-n2));
-			}
-			break;
-		default:
-			printf("unknown shift type!\n");
-			exit(0);
-	}
-
-	if (setC)
-		cmsr.C = C;
-	return res;
-}
-
 int execute(inst_t *inst)
-{
+{/*
 	int ii = inst->i;
 	int oper1, oper2;
 	int old_pc = PC;
@@ -273,7 +232,7 @@ int execute(inst_t *inst)
 			{
 				d_imm_sh_inst_t ninst = *(d_imm_sh_inst_t *)&ii;
 				oper1 = R(ninst.rn);
-				oper2 = shifted(ninst.shifttype, R(ninst.rm), ninst.imm, IS_LOG(ninst.opcode) && ninst.S);
+				oper2 = shifter(ninst.shifttype, R(ninst.rm), ninst.imm);
 
 				dp_inst_remain(ninst.opcode, ninst.rd,  oper1, oper2, ninst.S);
 				break;
@@ -282,7 +241,7 @@ int execute(inst_t *inst)
 			{
 				d_reg_sh_inst_t ninst = *(d_reg_sh_inst_t *)&ii;
 				oper1 = R(ninst.rn);
-				oper2 = shifted(ninst.shifttype, R(ninst.rm), R(ninst.rs), IS_LOG(ninst.opcode) && ninst.S);
+				oper2 = shifter(ninst.shifttype, R(ninst.rm), R(ninst.rs));
 
 				dp_inst_remain(ninst.opcode, ninst.rd, oper1, oper2, ninst.S);
 				break;
@@ -310,7 +269,7 @@ int execute(inst_t *inst)
 			{
 				d_imm_inst_t ninst = *(d_imm_inst_t *)&ii;
 				oper1 = R(ninst.rn);
-				oper2 = shifted(SHIFT_LP, ninst.imm, ninst.rotate, IS_LOG(ninst.opcode) && ninst.S);
+				oper2 = shifter(SHIFT_LP, ninst.imm, ninst.rotate);
 
 				dp_inst_remain(ninst.opcode, ninst.rd, oper1, oper2, ninst.S);
 				break;
@@ -318,7 +277,7 @@ int execute(inst_t *inst)
 		case LSR_OFF_INST:
 			{
 				lsr_off_inst_t ninst = *(lsr_off_inst_t *)&ii;
-				int offset = shifted(ninst.shifttype, R(ninst.rm), R(ninst.imm), 1);
+				int offset = shifter(ninst.shifttype, R(ninst.rm), R(ninst.imm));
 				ls_inst_remain(ii, offset);
 				break;
 			}
@@ -358,7 +317,7 @@ int execute(inst_t *inst)
 	}
 	if (PC == old_pc) PC += 4;
 
-	return 0;
+	return 0;*/
 }
 
 int memory(inst_t *inst)
@@ -371,3 +330,5 @@ int writeback(inst_t *inst)
 	return 0;
 }
 
+int decode()
+{}
