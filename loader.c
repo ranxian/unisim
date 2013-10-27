@@ -67,7 +67,7 @@ int load_psegs(FILE *file, Elf32_Ehdr *ehdr, Elf32_Phdr *phdrs)
 			fread(segments[segment_cnt].content, 1, hdr->p_filesz, file);
 
 			memcpy(&word, segments[segment_cnt].content, 4);
-			printdw(word);
+			// printdw(word);
 			segment_cnt++;
 		}
 	}

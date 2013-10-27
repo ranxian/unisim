@@ -12,6 +12,10 @@
 #define LR (regs[30])
 
 void printdw(int dword);
-void inst_info();
 uint32_t bits(int dword, int start, int end);
+void fetch_stat();
+void decode_stat();
+void execute_stat();
+void memory_stat();
+void writeback_stat();
 #endif

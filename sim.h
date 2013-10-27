@@ -195,14 +195,36 @@ typedef struct {
 	int 		imm14;
 	int 		imm24;
 	int 		S;
+	int 		S2;
 	int 		P;
 	int 		U;
 	int 		B;
 	int 		W;
+	int 		A;
 	int 		L;
 	int 		H;
 	int 		valP;
 } d_reg_t;
+
+typedef struct {
+	inst_type_t insttype;
+	int opcode;
+	int rn;
+	int rd;
+	int rs;
+	int op1;
+	int op2;
+	int op3;
+	int S;
+	int P;
+	int U;
+	int B;
+	int W;
+	int L;
+	int H;
+	int valP;
+	int cond;
+} e_reg_t;
 
 #define REG_NUM 33
 
@@ -210,7 +232,8 @@ extern int regs[REG_NUM];
 extern int ir;
 extern stat_reg_t cmsr;
 extern stat_reg_t temp_cmsr;
-extern d_reg_t d_reg, D_reg;
+extern d_reg_t f_reg, D_reg;
+extern e_reg_t d_reg, E_reg;
 
 int simulate(int entry);
 
@@ -223,4 +246,6 @@ int execute();
 int memory();
 
 int writeback();
+
+int clock_tick();
 #endif

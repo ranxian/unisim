@@ -10,7 +10,8 @@ int ir;
 int lr;
 int regs[REG_NUM];
 stat_reg_t cmsr, temp_cmsr;
-d_reg_t d_reg, D_reg;
+d_reg_t f_reg, D_reg;
+e_reg_t d_reg, E_reg;
 
 int main(int argc, char *argv[])
 {
@@ -21,12 +22,11 @@ int main(int argc, char *argv[])
 	Elf32_Ehdr *ehdrp = &ehdr;
 
 	fread(ehdrp, 1, sizeof(ehdr), file);
-	ehdr_stats(ehdrp);
+	// ehdr_stats(ehdrp);
 	load_shdrs(file, ehdrp, shdrs);
 	load_phdrs(file, ehdrp, phdrs);
 	load_psegs(file, ehdrp, phdrs);
 
-	printf("%d\n", segment_cnt);
 	simulate(ehdrp->e_entry);
 	fclose(file);
 }

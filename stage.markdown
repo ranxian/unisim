@@ -125,7 +125,7 @@ Execute:
 Memory:
 
 Write-back:
-	R30_svc = pc;
+	R30_svc = valP;
 	rs_svc = CMSR
 	CMSR[4:0] = 10011
 	CMSR[5] = 0

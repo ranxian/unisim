@@ -22,23 +22,33 @@ int simulate(int entry)
 	int i;
 
 	PC = entry;
-	printdw(PC);
+	// printdw(PC);
 
 	for (i = 0; i < 10; i++) {
 		// fetch
 		fetch_dword(PC, &ir);
-		printf("inst: ");
 		printdw(ir);
 		fetch();
-		inst_info();
+		fetch_stat();
+		clock_tick();
 		// decode
 		decode();
+		decode_stat();
+		clock_tick();
 		// execute
 		execute();
+		execute_stat();
+		clock_tick();
 		// memory
 		memory();
+		memory_stat();
+		clock_tick();
 		// write-back
 		writeback();
+		writeback_stat();
+		clock_tick();
+		PC += 4;
+		break; // break for debug
 	}
 	return 0;
 }
@@ -53,59 +63,68 @@ int fetch()
 	uint32_t f5_8 = bits(ii, 5, 8);
 	uint32_t f9_13 = bits(ii, 9, 13);
 
-	d_reg.opcode = f25_28;
-	d_reg.rn = f19_23;
-	d_reg.rd = f14_18;
-	d_reg.shift_imm = f9_13;
-	d_reg.shifttype = bits(ii, 6, 7);
-	d_reg.rm = bits(ii, 0, 4);
-	d_reg.rotate = f9_13;
-	d_reg.imm9 = bits(ii, 0, 8);
-	d_reg.hioff = f9_13;
-	d_reg.lowoff = bits(ii, 0, 4);
-	d_reg.imm14 = bits(ii, 0, 13);
-	d_reg.cond = f25_28;
-	d_reg.imm24 = bits(ii, 0, 23);
+	f_reg.opcode = f25_28;
+	f_reg.rn = f19_23;
+	f_reg.rd = f14_18;
+	f_reg.shift_imm = f9_13;
+	f_reg.shifttype = bits(ii, 6, 7);
+	f_reg.rm = bits(ii, 0, 4);
+	f_reg.rotate = f9_13;
+	f_reg.imm9 = bits(ii, 0, 8);
+	f_reg.hioff = f9_13;
+	f_reg.lowoff = bits(ii, 0, 4);
+	f_reg.imm14 = bits(ii, 0, 13);
+	f_reg.cond = f25_28;
+	f_reg.imm24 = bits(ii, 0, 23);
+	f_reg.S = B(ii, 24);
+	f_reg.L = B(ii, 24);
+	f_reg.A = B(ii, 25);
+	f_reg.B = B(ii, 26);
+	f_reg.U = B(ii, 27);
+	f_reg.P = B(ii, 28);
+	f_reg.S2 = B(ii, 7);
+	f_reg.H = B(ii, 6);
+	f_reg.valP = PC + 4;
 
 	switch(f29_31) {
 		case 0x0:
 			if (B(ii, 8) == 0 && B(ii, 5) == 0) {
-				d_reg.insttype = D_IMM_SH_INST;
+				f_reg.insttype = D_IMM_SH_INST;
 			}
 			else if (B(ii, 8) == 0 && B(ii, 5) == 1)
-				d_reg.insttype = D_REG_SH_INST;
+				f_reg.insttype = D_REG_SH_INST;
 			if (B(ii, 28)) {
 				if (f5_8 == 0x9)
-					d_reg.insttype = MUL_INST;
+					f_reg.insttype = MUL_INST;
 			} else if (B(ii, 28) == 1) {
 				if (B(ii, 25) == 0 && f19_23 == 0x1f &&
 						f14_18 == 0x1f	&& f9_13 == 0 && f5_8 == 0x9)
-					d_reg.insttype = BRX_INST;
+					f_reg.insttype = BRX_INST;
 			}
 			break;
 		case 0x1:
-			d_reg.insttype = D_IMM_INST;
+			f_reg.insttype = D_IMM_INST;
 			break;
 		case 0x2:
 			if (B(ii, 5) == 0 && B(ii, 8) == 0)
-				d_reg.insttype = LSR_OFF_INST;
+				f_reg.insttype = LSR_OFF_INST;
 			else if (B(ii, 26) == 0 && f9_13 == 0 && B(ii, 5) == 1 && B(ii, 8) == 1)
-				d_reg.insttype = LSHWR_OFF_INST;
+				f_reg.insttype = LSHWR_OFF_INST;
 			else if (B(ii, 26) == 1 && B(ii, 5) == 1 && B(ii, 8) == 1)
-				d_reg.insttype = LSHWI_OFF_INST;
+				f_reg.insttype = LSHWI_OFF_INST;
 			break;
 		case 0x3:
-			d_reg.insttype = LSI_OFF_INST;
+			f_reg.insttype = LSI_OFF_INST;
 			break;
 		case 0x5:
-			d_reg.insttype = BRLK_INST;
+			f_reg.insttype = BRLK_INST;
 			break;
 		case 0x7:
 			if (bits(ii, 24, 28) == 0x1f)
-				d_reg.insttype = ST_INST;
+				f_reg.insttype = ST_INST;
 			break;
 		default:
-			d_reg.insttype = UNKNOWN;
+			f_reg.insttype = UNKNOWN;
 	}
 }
 
@@ -220,92 +239,71 @@ int ls_inst_remain(int inst, int offset)
 	}
 }
 
-int execute(inst_t *inst)
-{/*
-	int ii = inst->i;
-	int oper1, oper2;
-	int old_pc = PC;
-	int shift_setC = 0;
-
-	switch(inst->type) {
+int decode()
+{
+	switch(D_reg.insttype) {
 		case D_IMM_SH_INST:
 			{
-				d_imm_sh_inst_t ninst = *(d_imm_sh_inst_t *)&ii;
-				oper1 = R(ninst.rn);
-				oper2 = shifter(ninst.shifttype, R(ninst.rm), ninst.imm);
-
-				dp_inst_remain(ninst.opcode, ninst.rd,  oper1, oper2, ninst.S);
+				d_reg.op1 = R(D_reg.rn);
+				d_reg.op2 = shifter(D_reg.shifttype, R(D_reg.rm), D_reg.shift_imm);
 				break;
 			}
 		case D_REG_SH_INST:
 			{
-				d_reg_sh_inst_t ninst = *(d_reg_sh_inst_t *)&ii;
-				oper1 = R(ninst.rn);
-				oper2 = shifter(ninst.shifttype, R(ninst.rm), R(ninst.rs));
-
-				dp_inst_remain(ninst.opcode, ninst.rd, oper1, oper2, ninst.S);
+				d_reg.op1 = R(D_reg.rn);
+				d_reg.op2 = shifter(D_reg.shifttype, R(D_reg.rm), R(D_reg.rs));
 				break;
 			}
 		case MUL_INST:
 			{
-				mul_inst_t ninst = *(mul_inst_t *)&ii;
-				int tmp = R(ninst.rn) * R(ninst.rm) + R(ninst.rs);
-				if (tmp == 0)
-					cmsr.Z = 1;
-				cmsr.N = B(tmp, 31);
-				regs[ninst.rd] = tmp;
+				d_reg.op1 = R(D_reg.rn);
+				d_reg.op2 = R(D_reg.rm);
+				d_reg.op3 = R(D_reg.rs);
 				break;
 			}
 		case BRX_INST:
 			{
-				brx_inst_t ninst = *(brx_inst_t *)&ii;
-				if (ninst.L)
-					LR = R(31);
-				PC = R(ninst.rm);
-				regs[30] &= 0xfffffffc;
+				d_reg.op2 = R(D_reg.rm);
 				break;
 			}
 		case D_IMM_INST:
 			{
-				d_imm_inst_t ninst = *(d_imm_inst_t *)&ii;
-				oper1 = R(ninst.rn);
-				oper2 = shifter(SHIFT_LP, ninst.imm, ninst.rotate);
-
-				dp_inst_remain(ninst.opcode, ninst.rd, oper1, oper2, ninst.S);
+				d_reg.op1 = R(D_reg.rn);
+				d_reg.op2 = shifter(SHIFT_LP, D_reg.imm9, D_reg.rotate);
 				break;
 			}
 		case LSR_OFF_INST:
 			{
-				lsr_off_inst_t ninst = *(lsr_off_inst_t *)&ii;
-				int offset = shifter(ninst.shifttype, R(ninst.rm), R(ninst.imm));
-				ls_inst_remain(ii, offset);
+				d_reg.op1 = R(D_reg.rn);
+				d_reg.op2 = shifter(D_reg.shifttype, R(D_reg.rm), D_reg.shift_imm);
 				break;
 			}
 		case LSHWR_OFF_INST:
 			{
-				lshwr_off_inst_t ninst = *(lshwr_off_inst_t *)&ii;
+				d_reg.op1 = R(D_reg.rn);
+				d_reg.op2 = R(D_reg.rm);
 				break;
 			}
 		case LSHWI_OFF_INST:
 			{
-				lshwi_off_inst_t ninst = *(lshwi_off_inst_t *)&ii;
+				d_reg.op1 = R(D_reg.rn);
+				d_reg.op2 = (D_reg.hioff << 5) | (D_reg.lowoff);
 				break;
 			}
 		case LSI_OFF_INST:
 			{
-				lsi_off_inst_t ninst = *(lsi_off_inst_t *)&ii;
-				int offset = ninst.himm;
-				ls_inst_remain(ii, offset);
+				d_reg.op1 = R(D_reg.rn);
+				d_reg.op2 = shifter(D_reg.shifttype, R(D_reg.rm), D_reg.shift_imm);
 				break;
 			}
 		case ST_INST:
 			{
-				st_inst_t ninst = *(st_inst_t *)&ii;
 				break;
 			}
 		case BRLK_INST:
 			{
-				brlk_inst_t ninst = *(brlk_inst_t *)&ii;
+				d_reg.op1 = D_reg.imm24 << 2;
+				d_reg.op2 = D_reg.valP;
 				break;
 			}
 		case UNKNOWN:
@@ -315,9 +313,7 @@ int execute(inst_t *inst)
 			}
 		default: break;
 	}
-	if (PC == old_pc) PC += 4;
-
-	return 0;*/
+	return 0;
 }
 
 int memory(inst_t *inst)
@@ -330,5 +326,11 @@ int writeback(inst_t *inst)
 	return 0;
 }
 
-int decode()
+int execute()
 {}
+
+int clock_tick()
+{
+	D_reg = f_reg;
+	E_reg = d_reg;
+}
