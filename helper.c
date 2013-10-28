@@ -14,6 +14,11 @@ void printdw(int dword)
 	printf("\n");
 }
 
+void print_cmsr(stat_reg_t *r)
+{
+	printf("CMSR:\t\tN=%d  Z=%d  C=%d  V=%d\n", r->N, r->Z, r->C, r->V);
+}
+
 void print_inst_name(inst_type_t type)
 {
 	printf("insttype:\t");
@@ -52,7 +57,8 @@ void print_inst_name(inst_type_t type)
 void fetch_stat()
 {
 	printf("FETCH STAGE:\n");
-	printf("opcode: 0x%x\n", f_reg.opcode);
+	print_inst_name(f_reg.insttype);
+	printf("opcode:\t\t0x%x\n", f_reg.opcode);
 	printf("Rn:\t\t%d\n", f_reg.rn);
 	printf("Rd:\t\t%d\n", f_reg.rd);
 	printf("Rm:\t\t%d\n", f_reg.rm);
@@ -72,6 +78,7 @@ void fetch_stat()
 	printf("L:\t\t%d\n", f_reg.L);
 	printf("H:\t\t%d\n", f_reg.H);
 	printf("valP:\t\t0x%x\n", f_reg.valP);
+	print_cmsr(&cmsr);
 
 	printf("-------------------------------------------\n");
 }
@@ -89,7 +96,7 @@ uint32_t bits(int dword, int start, int end)
 void decode_stat()
 {
 	print_inst_name(d_reg.insttype);
-	printf("opcode: 0x%x\n", f_reg.opcode);
+	printf("opcode:\t\t0x%x\n", f_reg.opcode);
 	printf("Rn:\t\t%d\n", d_reg.rn);
 	printf("Rd:\t\t%d\n", d_reg.rd);
 	printf("Rs:\t\t%d\n", d_reg.rs);
@@ -105,6 +112,7 @@ void decode_stat()
 	printf("H:\t\t%d\n", f_reg.H);
 	printf("cond:\t\t%x\n", d_reg.cond);
 	printf("valP:\t\t0x%x\n", d_reg.valP);
+	print_cmsr(&cmsr);
 }
 void execute_stat() {}
 void memory_stat() {}

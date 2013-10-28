@@ -25,6 +25,7 @@ int simulate(int entry)
 	// printdw(PC);
 
 	for (i = 0; i < 10; i++) {
+		printf("PC: 0x%x\n", PC);
 		// fetch
 		fetch_dword(PC, &ir);
 		printdw(ir);
@@ -126,6 +127,8 @@ int fetch()
 		default:
 			f_reg.insttype = UNKNOWN;
 	}
+
+	return 1;
 }
 
 int alu()
@@ -317,7 +320,7 @@ int decode()
 			}
 		case UNKNOWN:
 			{
-				printf("unknown inst encountered");
+				printf("unknown inst encountered\n");
 				return -1;
 			}
 		default: break;

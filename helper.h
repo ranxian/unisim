@@ -26,4 +26,6 @@ void decode_stat();
 void execute_stat();
 void memory_stat();
 void writeback_stat();
+
+extern stat_reg_t cmsr;
 #endif

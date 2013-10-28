@@ -212,16 +212,19 @@ typedef struct {
 	int rn;
 	int rd;
 	int rs;
+	int valD;
 	int op1;
 	int op2;
 	int op3;
 	int S;
+	int S2;
 	int P;
 	int U;
 	int B;
 	int W;
 	int L;
 	int H;
+	int C;
 	int valP;
 	int cond;
 } e_reg_t;
@@ -232,8 +235,10 @@ typedef struct {
 	int rn;
 	int rd;
 	int rs;
+	int valD;
 	int valE;
 	int S;
+	int S2;
 	int P;
 	int U;
 	int B;
@@ -243,6 +248,26 @@ typedef struct {
 	int valP;
 	int cnd;
 } m_reg_t;
+
+typedef struct {
+	inst_type_t insttype;
+	int opcode;
+	int rn;
+	int rd;
+	int rs;
+	int valM;
+	int valE;
+	int S;
+	int S2;
+	int P;
+	int U;
+	int B;
+	int W;
+	int L;
+	int H;
+	int valP;
+	int cnd;
+} w_reg_t;
 
 #define REG_NUM 33
 
