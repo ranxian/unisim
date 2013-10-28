@@ -10,6 +10,14 @@
 				|| opcode == ORR || opcode == MOV || opcode == CLB || opcode == MVN)
 #define PC (regs[31])
 #define LR (regs[30])
+#define COPY_SBIT(r1, r2) \
+	(r1.S = r2.S); \
+	(r1.P = r2.P); \
+	(r1.U = r2.U); \
+	(r1.B = r2.B); \
+	(r1.W = r2.W); \
+	(r1.L = r2.L); \
+	(r1.H = r2.H);
 
 void printdw(int dword);
 uint32_t bits(int dword, int start, int end);

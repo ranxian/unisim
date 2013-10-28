@@ -128,12 +128,14 @@ int fetch()
 	}
 }
 
-int dp_inst_remain(opcode_t opcode, int rd, int oper1, int oper2, int setcc)
+int alu()
 {
 	uint32_t carry = cmsr.C;
 	int tmp_result;
 	int V = 0, C = 0;
 	long long long_res;
+	int oper1 = E_reg.op1, oper2= E_reg.op2, oper3 = E_reg.op3;
+	opcode_t opcode = E_reg.opcode;
 	switch(opcode) {
 		case AND:
 			tmp_result = oper1 & oper2;
@@ -191,13 +193,18 @@ int dp_inst_remain(opcode_t opcode, int rd, int oper1, int oper2, int setcc)
 		case MVN:
 			tmp_result = ~oper2;
 			break;
+		case MUL:
+			tmp_result = oper1 * oper2 + oper3;
+			break;
+		case NOP:
+			tmp_result = oper2;
+			break;
 		default:
 			printf("unkown opcode, panic!\n");
 			exit(0);
 	}
-	if (!(opcode == CAND || opcode == CXOR || opcode == CADD || opcode == CSUB))
-		regs[rd] = tmp_result;
 	// set cmsr bit
+	/*
 	if (setcc && rd != 31) {
 		if (IS_LOG(opcode)) {
 			if (tmp_result == 0)
@@ -221,6 +228,8 @@ int dp_inst_remain(opcode_t opcode, int rd, int oper1, int oper2, int setcc)
 			}
 		}
 	}
+	*/
+	return tmp_result;
 }
 
 int ls_inst_remain(int inst, int offset)
@@ -313,6 +322,15 @@ int decode()
 			}
 		default: break;
 	}
+	d_reg.insttype = D_reg.insttype;
+	d_reg.opcode = D_reg.opcode;
+	d_reg.rn = D_reg.rn;
+	d_reg.rd = D_reg.rd;
+	d_reg.rs = D_reg.rs;
+	d_reg.S  = D_reg.S;
+	d_reg.valP = D_reg.valP;
+	d_reg.cond = D_reg.cond;
+	COPY_SBIT(d_reg, D_reg);
 	return 0;
 }
 
@@ -327,10 +345,45 @@ int writeback(inst_t *inst)
 }
 
 int execute()
-{}
+{
+	inst_type_t t = E_reg.insttype;
+	if (t == ST_INST) {
+		;
+	} else {
+		switch(t) {
+			case MUL_INST:
+				E_reg.opcode = MUL;
+				break;
+			case BRX_INST:
+				E_reg.opcode = NOP;
+				break;
+			case LSR_OFF_INST:
+			case LSI_OFF_INST:
+			case LSHWR_OFF_INST:
+			case LSHWI_OFF_INST:
+				{
+					if (E_reg.U) E_reg.opcode = ADD;
+					else E_reg.opcode = SUB;
+					break;
+				}
+			case BRLK_INST:
+				E_reg.opcode = ADD;
+				break;
+			case ST_INST:
+				E_reg.opcode = NONE;
+				break;
+			default:
+				printf("unknown inst in Execute stage!\n");
+		}
+		if (!(t == CADD || t == CAND || t == CSUB || t == CXOR))
+			e_reg.valE = alu();
+		else alu();
+	}
+}
 
 int clock_tick()
 {
 	D_reg = f_reg;
 	E_reg = d_reg;
+	M_reg = e_reg;
 }

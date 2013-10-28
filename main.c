@@ -12,6 +12,7 @@ int regs[REG_NUM];
 stat_reg_t cmsr, temp_cmsr;
 d_reg_t f_reg, D_reg;
 e_reg_t d_reg, E_reg;
+m_reg_t e_reg, M_reg;
 
 int main(int argc, char *argv[])
 {
