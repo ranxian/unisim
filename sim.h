@@ -6,9 +6,12 @@
 typedef enum { D_IMM_SH_INST, D_REG_SH_INST, D_IMM_INST, MUL_INST, BRX_INST,
 	           LSR_OFF_INST, LSHWR_OFF_INST, LSHWI_OFF_INST,
 			   LSI_OFF_INST, ST_INST, BRLK_INST, UNKNOWN } inst_type_t;
+
 typedef enum { AND, XOR, SUB, RSB, ADD, ADC, SBC, RSC, CAND, CXOR, CSUB,
 			   CADD, ORR, MOV, CLB, MVN, MUL, NOP, NONE } opcode_t;
+
 typedef enum { SHIFT_LL, SHIFT_LR, SHIFT_AR, SHIFT_LP } shifttype_t;
+
 typedef struct {
 	uint32_t rm:5;
 	uint32_t b5:1;
@@ -208,14 +211,12 @@ typedef struct {
 
 typedef struct {
 	inst_type_t insttype;
-	int opcode;
-	int rn;
-	int rd;
-	int rs;
+	opcode_t 	opcode;
+	int dstE;
+	int dstM;
 	int valD;
 	int op1;
 	int op2;
-	int op3;
 	int S;
 	int S2;
 	int P;
@@ -231,10 +232,8 @@ typedef struct {
 
 typedef struct {
 	inst_type_t insttype;
-	int opcode;
-	int rn;
-	int rd;
-	int rs;
+	int dstE;
+	int dstM;
 	int valD;
 	int valE;
 	int S;
@@ -246,15 +245,14 @@ typedef struct {
 	int L;
 	int H;
 	int valP;
-	int cnd;
+	int cond;
 } m_reg_t;
 
 typedef struct {
 	inst_type_t insttype;
 	int opcode;
-	int rn;
-	int rd;
-	int rs;
+	int dstE;
+	int dstM;
 	int valM;
 	int valE;
 	int S;
@@ -266,7 +264,7 @@ typedef struct {
 	int L;
 	int H;
 	int valP;
-	int cnd;
+	int cond;
 } w_reg_t;
 
 #define REG_NUM 33
@@ -278,6 +276,7 @@ extern stat_reg_t temp_cmsr;
 extern d_reg_t f_reg, D_reg;
 extern e_reg_t d_reg, E_reg;
 extern m_reg_t e_reg, M_reg;
+extern w_reg_t m_reg, W_reg;
 
 int simulate(int entry);
 

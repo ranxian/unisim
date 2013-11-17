@@ -26,6 +26,9 @@ void decode_stat();
 void execute_stat();
 void memory_stat();
 void writeback_stat();
+char *INST_NAME(inst_type_t i);
+char *OPCODE_NAME(opcode_t o);
+char *SHIFT_TYPE_NAME(shifttype_t s);
 
 extern stat_reg_t cmsr;
 #endif

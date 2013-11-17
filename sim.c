@@ -5,17 +5,42 @@
 #include "helper.h"
 #include "shifter.h"
 
-void fetch_dword(int addr, int *dest)
-{
+char *V2P(int addr) {
 	int i;
-	char *src;
+	char *src = NULL;
 	for (i = 0; i < segment_cnt; i++) {
 		if (segments[i].offset <= addr && segments[i].offset + segments[i].size >= addr - 4) {
 			src = segments[i].content + addr - segments[i].offset;
 		}
 	}
-	memcpy(dest, src, sizeof(int));
+	return src;
 }
+
+void fetch_nbyte(int addr, void *dest, int len)
+{
+	memcpy(dest, V2P(addr), len);	
+}
+
+void fetch_dword(int addr, void *dest)
+{
+	fetch_nbyte(addr, dest, 4);
+}
+
+void write_word(int addr, int word)
+{
+	memcpy(V2P(addr), &word, 4);
+}
+
+void write_byte(int addr, char byte) 
+{
+	memcpy(V2P(addr), &byte, 1);
+}
+
+void write_hword(int addr, short hword)
+{
+	memcpy(V2P(addr), &hword, 2);
+}
+
 
 int simulate(int entry)
 {
@@ -137,7 +162,7 @@ int alu()
 	int tmp_result;
 	int V = 0, C = 0;
 	long long long_res;
-	int oper1 = E_reg.op1, oper2= E_reg.op2, oper3 = E_reg.op3;
+	int oper1 = E_reg.op1, oper2= E_reg.op2;
 	opcode_t opcode = E_reg.opcode;
 	switch(opcode) {
 		case AND:
@@ -197,7 +222,7 @@ int alu()
 			tmp_result = ~oper2;
 			break;
 		case MUL:
-			tmp_result = oper1 * oper2 + oper3;
+			tmp_result = oper1 * oper2;
 			break;
 		case NOP:
 			tmp_result = oper2;
@@ -253,59 +278,76 @@ int ls_inst_remain(int inst, int offset)
 
 int decode()
 {
+	memset(&d_reg, 0xff, sizeof(d_reg));
 	switch(D_reg.insttype) {
 		case D_IMM_SH_INST:
 			{
 				d_reg.op1 = R(D_reg.rn);
 				d_reg.op2 = shifter(D_reg.shifttype, R(D_reg.rm), D_reg.shift_imm);
+				d_reg.dstE = D_reg.rd;
 				break;
 			}
 		case D_REG_SH_INST:
 			{
 				d_reg.op1 = R(D_reg.rn);
 				d_reg.op2 = shifter(D_reg.shifttype, R(D_reg.rm), R(D_reg.rs));
+				d_reg.dstE = D_reg.rd;
 				break;
 			}
 		case MUL_INST:
 			{
 				d_reg.op1 = R(D_reg.rn);
 				d_reg.op2 = R(D_reg.rm);
-				d_reg.op3 = R(D_reg.rs);
+				d_reg.dstE = D_reg.rd;
 				break;
 			}
 		case BRX_INST:
 			{
 				d_reg.op2 = R(D_reg.rm);
+				d_reg.dstE = 31;
 				break;
 			}
 		case D_IMM_INST:
 			{
 				d_reg.op1 = R(D_reg.rn);
 				d_reg.op2 = shifter(SHIFT_LP, D_reg.imm9, D_reg.rotate);
+				d_reg.dstE = D_reg.rd;
 				break;
 			}
 		case LSR_OFF_INST:
 			{
 				d_reg.op1 = R(D_reg.rn);
 				d_reg.op2 = shifter(D_reg.shifttype, R(D_reg.rm), D_reg.shift_imm);
+				d_reg.valD = R(D_reg.rd);
+				d_reg.dstE = D_reg.rn;
+				d_reg.dstM = D_reg.rd;
 				break;
 			}
 		case LSHWR_OFF_INST:
 			{
 				d_reg.op1 = R(D_reg.rn);
 				d_reg.op2 = R(D_reg.rm);
+				d_reg.valD = R(D_reg.rd);
+				d_reg.dstE = D_reg.rn;
+				d_reg.dstM = D_reg.rd;
 				break;
 			}
 		case LSHWI_OFF_INST:
 			{
 				d_reg.op1 = R(D_reg.rn);
 				d_reg.op2 = (D_reg.hioff << 5) | (D_reg.lowoff);
+				d_reg.valD = R(D_reg.rd);
+				d_reg.dstE = D_reg.rn;
+				d_reg.dstM = D_reg.rd;
 				break;
 			}
 		case LSI_OFF_INST:
 			{
 				d_reg.op1 = R(D_reg.rn);
 				d_reg.op2 = shifter(D_reg.shifttype, R(D_reg.rm), D_reg.shift_imm);
+				d_reg.valD = R(D_reg.rd);
+				d_reg.dstE = D_reg.rn;
+				d_reg.dstM = D_reg.rd;
 				break;
 			}
 		case ST_INST:
@@ -316,6 +358,7 @@ int decode()
 			{
 				d_reg.op1 = D_reg.imm24 << 2;
 				d_reg.op2 = D_reg.valP;
+				d_reg.dstE = 31;
 				break;
 			}
 		case UNKNOWN:
@@ -327,22 +370,60 @@ int decode()
 	}
 	d_reg.insttype = D_reg.insttype;
 	d_reg.opcode = D_reg.opcode;
-	d_reg.rn = D_reg.rn;
-	d_reg.rd = D_reg.rd;
-	d_reg.rs = D_reg.rs;
-	d_reg.S  = D_reg.S;
 	d_reg.valP = D_reg.valP;
 	d_reg.cond = D_reg.cond;
 	COPY_SBIT(d_reg, D_reg);
 	return 0;
 }
 
-int memory(inst_t *inst)
+int memory()
 {
-	return 0;
+	switch(M_reg.insttype) {
+		case LSR_OFF_INST:
+		case LSI_OFF_INST:
+		{
+			int addr;
+			addr = M_reg.P ? M_reg.valE : R(M_reg.dstE);
+			if (M_reg.L) {
+				if (M_reg.B) {
+					fetch_nbyte(addr, &m_reg.valM, 1);
+				} else {
+					fetch_nbyte(addr, &m_reg.valM, 4);
+				}
+			} else {
+				if (M_reg.B) {
+					write_byte(addr, M_reg.valD & 0xff);
+				} else {
+					write_word(addr, M_reg.valD);
+				}
+			}
+			break;
+		}
+		case LSHWR_OFF_INST:
+		case LSHWI_OFF_INST:
+		{
+			int addr;
+			addr = M_reg.P ? M_reg.valE : R(M_reg.dstE);
+			if (M_reg.L) {
+				if (M_reg.H) {
+					fetch_nbyte(addr, &m_reg.valM, 2);
+				} else {
+					fetch_nbyte(addr, &m_reg.valM, 4);
+				}
+			} else {
+				if (M_reg.H) {
+					write_hword(addr, M_reg.valD & 0xffff);
+				} else {
+					write_word(addr, M_reg.valD);
+				}
+			}
+			break;
+		}
+		default: break;
+	}
 }
 
-int writeback(inst_t *inst)
+int writeback()
 {
 	return 0;
 }
@@ -350,38 +431,42 @@ int writeback(inst_t *inst)
 int execute()
 {
 	inst_type_t t = E_reg.insttype;
-	if (t == ST_INST) {
-		;
-	} else {
-		switch(t) {
-			case MUL_INST:
-				E_reg.opcode = MUL;
+	
+	switch(t) {
+		case MUL_INST:
+			E_reg.opcode = MUL;
+			break;
+		case BRX_INST:
+			E_reg.opcode = NOP;
+			break;
+		case LSR_OFF_INST:
+		case LSI_OFF_INST:
+		case LSHWR_OFF_INST:
+		case LSHWI_OFF_INST:
+			{
+				if (E_reg.U) E_reg.opcode = ADD;
+				else E_reg.opcode = SUB;
 				break;
-			case BRX_INST:
-				E_reg.opcode = NOP;
-				break;
-			case LSR_OFF_INST:
-			case LSI_OFF_INST:
-			case LSHWR_OFF_INST:
-			case LSHWI_OFF_INST:
-				{
-					if (E_reg.U) E_reg.opcode = ADD;
-					else E_reg.opcode = SUB;
-					break;
-				}
-			case BRLK_INST:
-				E_reg.opcode = ADD;
-				break;
-			case ST_INST:
-				E_reg.opcode = NONE;
-				break;
-			default:
-				printf("unknown inst in Execute stage!\n");
-		}
-		if (!(t == CADD || t == CAND || t == CSUB || t == CXOR))
-			e_reg.valE = alu();
-		else alu();
+			}
+		case BRLK_INST:
+			E_reg.opcode = ADD;
+			break;
+		case ST_INST:
+			E_reg.opcode = NONE;
+			break;
+		default:
+			printf("unknown inst in Execute stage!\n");
 	}
+	if (!(t == CADD || t == CAND || t == CSUB || t == CXOR))
+		e_reg.valE = alu();
+	else alu();
+
+	e_reg.valP = E_reg.valP;
+	e_reg.insttype = E_reg.insttype;
+	e_reg.dstE = E_reg.dstE;
+	e_reg.dstM = E_reg.dstM;
+	e_reg.valD = E_reg.valD;
+	COPY_SBIT(e_reg, E_reg);
 }
 
 int clock_tick()

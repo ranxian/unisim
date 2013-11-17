@@ -58,7 +58,7 @@ void fetch_stat()
 {
 	printf("FETCH STAGE:\n");
 	print_inst_name(f_reg.insttype);
-	printf("opcode:\t\t0x%x\n", f_reg.opcode);
+	printf("opcode:\t\t%s\n", OPCODE_NAME(f_reg.opcode));
 	printf("Rn:\t\t%d\n", f_reg.rn);
 	printf("Rd:\t\t%d\n", f_reg.rd);
 	printf("Rm:\t\t%d\n", f_reg.rm);
@@ -95,14 +95,14 @@ uint32_t bits(int dword, int start, int end)
 
 void decode_stat()
 {
+	printf("DECODE STAGE:\n");
 	print_inst_name(d_reg.insttype);
-	printf("opcode:\t\t0x%x\n", f_reg.opcode);
-	printf("Rn:\t\t%d\n", d_reg.rn);
-	printf("Rd:\t\t%d\n", d_reg.rd);
-	printf("Rs:\t\t%d\n", d_reg.rs);
+	printf("opcode:\t\t%s\n", OPCODE_NAME(d_reg.opcode));
+	printf("dstE:\t\t%d\n", d_reg.dstE);
+	printf("dstM:\t\t%d\n", d_reg.dstM);
+	printf("valD:\t\t%d\n", d_reg.valD);
 	printf("op1:\t\t0x%x\n", d_reg.op1);
 	printf("op2:\t\t0x%x\n", d_reg.op2);
-	printf("op3:\t\t0x%x\n", d_reg.op3);
 	printf("S:\t\t%d\n", d_reg.S);
 	printf("P:\t\t%d\n", d_reg.P);
 	printf("U:\t\t%d\n", d_reg.U);
@@ -110,11 +110,57 @@ void decode_stat()
 	printf("W:\t\t%d\n", f_reg.W);
 	printf("L:\t\t%d\n", f_reg.L);
 	printf("H:\t\t%d\n", f_reg.H);
-	printf("cond:\t\t%x\n", d_reg.cond);
 	printf("valP:\t\t0x%x\n", d_reg.valP);
 	print_cmsr(&cmsr);
+	printf("-------------------------------------------\n");
 }
-void execute_stat() {}
+void execute_stat()
+{
+	printf("EXECUTE STAGE:\n");
+	printf("insttype:\t%s\n", INST_NAME(e_reg.insttype));
+	printf("dstE:\t\t%d\n", d_reg.dstE);
+	printf("dstM:\t\t%d\n", d_reg.dstM);
+	printf("valD:\t\t%d\n", d_reg.valD);
+	printf("valE:\t\t%d\n", e_reg.valE);
+	printf("S:\t\t%d\n", d_reg.S);
+	printf("P:\t\t%d\n", d_reg.P);
+	printf("U:\t\t%d\n", d_reg.U);
+	printf("B:\t\t%d\n", d_reg.B);
+	printf("W:\t\t%d\n", f_reg.W);
+	printf("L:\t\t%d\n", f_reg.L);
+	printf("H:\t\t%d\n", f_reg.H);
+	printf("valP:\t\t0x%x\n", d_reg.valP);
+	printf("-------------------------------------------\n");
+}
 void memory_stat() {}
 void writeback_stat() {}
+
+char *INST_NAME(inst_type_t i) 
+{
+	static char *names[] = 
+	{
+		"D_IMM_SH_INST", "D_REG_SH_INST", "D_IMM_INST", "MUL_INST", "BRX_INST",
+	           "LSR_OFF_INST", "LSHWR_OFF_INST", "LSHWI_OFF_INST",
+			   "LSI_OFF_INST", "ST_INST", "BRLK_INST", "UNKNOWN"
+	};
+	return names[i];
+}
+
+char *OPCODE_NAME(opcode_t o) 
+{
+	static char *names[] = 
+	{
+		"AND", "XOR", "SUB", "RSB", "ADD", "ADC", "SBC", "RSC", "CAND", "CXOR", "CSUB","CADD", "ORR", "MOV", "CLB", "MVN", "MUL", "NOP", "NONE"
+	};
+	return names[o];
+}
+
+char *SHIFT_TYPE_NAME(shifttype_t s)
+{
+	static char *names[] = 
+	{
+		"SHIFT_LL", "SHIFT_LR", "SHIFT_AR", "SHIFT_LP" 
+	};
+	return names[s];
+}
 
