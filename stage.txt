@@ -4,6 +4,7 @@ Fetch:
 	inst_type;
 	split_inst;
 	valP = pc + 4;
+	pc += 4;
 Decode:
 	op1 = rn;
 	op2 = rm <shifttype> shift_imm;
@@ -19,7 +20,6 @@ Execute:
 Memory:
 
 Write-back:
-	pc = valP;
 	if (!LOG_INST) 
 		regs[dstE] = valE;
 
@@ -38,7 +38,6 @@ Execute:
 Memory:
 
 Write-back:
-	pc = valP;
 	regs[dstE] = valE;
 
 #### BRX_INST:
@@ -53,7 +52,6 @@ Execute:
 Memory:
 
 Write-back:
-	pc = valP;
 	regs[dstE] = valE;
 	if (L)
 		lr = valP & 0xfffffffe;
@@ -77,7 +75,6 @@ Memory:
 	if (L)  valM = B ? M[addr, 1] : M[addr, 4];
 	else B ? M[addr, 1] = valD : M[addr, 4] = valD;
 Write-back:
-	pc = valP;
 	if (L) regs[dstM] = valM;
 	if (!P || W) regs[dstE] = valE;
 
@@ -100,7 +97,6 @@ Memory:
 	if (L) valM = H ? M[addr, 2] : M[addr, 4];
 	else H ? M[addr, 2] = valD : M[addr, 4] = valD;
 Write-back:
-	pc = valP;
 	if (load) regs[dstM] = valM; // look at S2 to see if sign extend is needed
 	if (!P || W) regs[dstE] = valE;
 
@@ -117,7 +113,6 @@ Execute:
 Memory:
 	//
 Write-back:
-	pc = valP;
 	regs[dstE] = valE;
 	if (L) lr = valP;
 

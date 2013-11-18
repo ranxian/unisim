@@ -104,12 +104,13 @@ void decode_stat()
 	printf("op1:\t\t0x%x\n", d_reg.op1);
 	printf("op2:\t\t0x%x\n", d_reg.op2);
 	printf("S:\t\t%d\n", d_reg.S);
+	printf("S2:\t\t%d\n", d_reg.S2);
 	printf("P:\t\t%d\n", d_reg.P);
 	printf("U:\t\t%d\n", d_reg.U);
 	printf("B:\t\t%d\n", d_reg.B);
-	printf("W:\t\t%d\n", f_reg.W);
-	printf("L:\t\t%d\n", f_reg.L);
-	printf("H:\t\t%d\n", f_reg.H);
+	printf("W:\t\t%d\n", d_reg.W);
+	printf("L:\t\t%d\n", d_reg.L);
+	printf("H:\t\t%d\n", d_reg.H);
 	printf("valP:\t\t0x%x\n", d_reg.valP);
 	print_cmsr(&cmsr);
 	printf("-------------------------------------------\n");
@@ -118,21 +119,41 @@ void execute_stat()
 {
 	printf("EXECUTE STAGE:\n");
 	printf("insttype:\t%s\n", INST_NAME(e_reg.insttype));
-	printf("dstE:\t\t%d\n", d_reg.dstE);
-	printf("dstM:\t\t%d\n", d_reg.dstM);
-	printf("valD:\t\t%d\n", d_reg.valD);
+	printf("dstE:\t\t%d\n", e_reg.dstE);
+	printf("dstM:\t\t%d\n", e_reg.dstM);
+	printf("valD:\t\t%d\n", e_reg.valD);
 	printf("valE:\t\t%d\n", e_reg.valE);
-	printf("S:\t\t%d\n", d_reg.S);
-	printf("P:\t\t%d\n", d_reg.P);
-	printf("U:\t\t%d\n", d_reg.U);
-	printf("B:\t\t%d\n", d_reg.B);
-	printf("W:\t\t%d\n", f_reg.W);
-	printf("L:\t\t%d\n", f_reg.L);
-	printf("H:\t\t%d\n", f_reg.H);
-	printf("valP:\t\t0x%x\n", d_reg.valP);
+	printf("S:\t\t%d\n", e_reg.S);
+	printf("S2:\t\t%d\n", e_reg.S2);
+	printf("P:\t\t%d\n", e_reg.P);
+	printf("U:\t\t%d\n", e_reg.U);
+	printf("B:\t\t%d\n", e_reg.B);
+	printf("W:\t\t%d\n", e_reg.W);
+	printf("L:\t\t%d\n", e_reg.L);
+	printf("H:\t\t%d\n", e_reg.H);
+	printf("valP:\t\t0x%x\n", e_reg.valP);
 	printf("-------------------------------------------\n");
 }
-void memory_stat() {}
+void memory_stat()
+{
+	printf("MEMORY STAGE:\n");
+	printf("insttype:\t%s\n", INST_NAME(m_reg.insttype));
+	printf("dstE:\t\t%d\n", m_reg.dstE);
+	printf("dstM:\t\t%d\n", m_reg.dstM);
+	printf("valM:\t\t0x%x\n", m_reg.valM);
+	printf("valE:\t\t0x%x\n", m_reg.valE);
+	printf("S:\t\t%d\n", m_reg.S);
+	printf("S2:\t\t%d\n", m_reg.S2);
+	printf("P:\t\t%d\n", m_reg.P);
+	printf("U:\t\t%d\n", m_reg.U);
+	printf("B:\t\t%d\n", m_reg.B);
+	printf("W:\t\t%d\n", m_reg.W);
+	printf("L:\t\t%d\n", m_reg.L);
+	printf("H:\t\t%d\n", m_reg.H);
+	printf("valP:\t\t0x%x\n", m_reg.valP);
+	printf("cond:\t\t%x\n", m_reg.cond);
+	printf("-------------------------------------------\n");
+}
 void writeback_stat() {}
 
 char *INST_NAME(inst_type_t i) 

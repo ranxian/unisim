@@ -73,7 +73,6 @@ int simulate(int entry)
 		writeback();
 		writeback_stat();
 		clock_tick();
-		PC += 4;
 		break; // break for debug
 	}
 	return 0;
@@ -81,6 +80,8 @@ int simulate(int entry)
 
 int fetch()
 {
+	PC += 4;
+
 	int ii = ir;
 	uint32_t f29_31 = bits(ii, 29, 31);
 	uint32_t f25_28 = bits(ii, 26, 28);
@@ -372,6 +373,7 @@ int decode()
 	d_reg.opcode = D_reg.opcode;
 	d_reg.valP = D_reg.valP;
 	d_reg.cond = D_reg.cond;
+	d_reg.S2 = D_reg.S2;
 	COPY_SBIT(d_reg, D_reg);
 	return 0;
 }
@@ -421,6 +423,13 @@ int memory()
 		}
 		default: break;
 	}
+
+	COPY_SBIT(m_reg, M_reg);
+	m_reg.dstE = M_reg.dstE;
+	m_reg.dstM = M_reg.dstM;
+	m_reg.valE = M_reg.valE;
+	m_reg.valP = M_reg.valP;
+	m_reg.S2   = M_reg.S2;
 }
 
 int writeback()
@@ -457,9 +466,10 @@ int execute()
 		default:
 			printf("unknown inst in Execute stage!\n");
 	}
-	if (!(t == CADD || t == CAND || t == CSUB || t == CXOR))
+	opcode_t opcode = E_reg.opcode;
+	if (!(opcode == CADD || opcode == CAND || opcode == CSUB || opcode == CXOR)) {
 		e_reg.valE = alu();
-	else alu();
+	} else alu();
 
 	e_reg.valP = E_reg.valP;
 	e_reg.insttype = E_reg.insttype;
@@ -474,4 +484,5 @@ int clock_tick()
 	D_reg = f_reg;
 	E_reg = d_reg;
 	M_reg = e_reg;
+	W_reg = m_reg;
 }
