@@ -1,0 +1,134 @@
+#### D_IMM_SH_INST, D_REG_SH_INST, D_IMM_INST
+
+Fetch:
+	inst_type;
+	split_inst;
+	valP = pc + 4;
+Decode:
+	op1 = rn;
+	op2 = rm <shifttype> shift_imm;
+	// D_REG_SH_INST:	op2 = rm <shifttype> rs;
+	// D_IMM_INST:		op2 = imm <> rotate;
+	set_cc;
+	dstE = rd;
+Execute:
+	valE = op1 OP op2;
+	if (LOG_INST || S && rd != 31)
+		update cmsr;
+	
+Memory:
+
+Write-back:
+	pc = valP;
+	if (!LOG_INST) 
+		regs[dstE] = valE;
+
+#### MUL_INST
+
+Fetch:
+	the same.
+Decode:
+	op1 = rn;
+	op2 = rm;
+
+	dstE = rd;
+Execute:
+	valE = op1 mul op2;
+	update cmsr;
+Memory:
+
+Write-back:
+	pc = valP;
+	regs[dstE] = valE;
+
+#### BRX_INST:
+
+Fetch:
+	the same.
+Decode:
+	op2 = rm;
+	dstE = pc_reg_num;
+Execute:
+	valE = op2;
+Memory:
+
+Write-back:
+	pc = valP;
+	regs[dstE] = valE;
+	if (L)
+		lr = valP & 0xfffffffe;
+
+#### LSR_OFF_INST, LSI_OFF_INST:
+
+Fetch:
+	the same.
+Decode:
+	op1 = rn;
+	op2 = imm14; // LSI_OFF_INST;
+	// op2 = rm <shifttype> shift_imm;
+	valD = regs[rd];
+	dstE = rn;
+	dstM = rd;
+Execute:
+	if (U) valE = op1 + op2;
+	else valE = op1 - op2;
+Memory:
+	addr = P ? valE : regs[dstE];
+	if (L)  valM = B ? M[addr, 1] : M[addr, 4];
+	else B ? M[addr, 1] = valD : M[addr, 4] = valD;
+Write-back:
+	pc = valP;
+	if (L) regs[dstM] = valM;
+	if (!P || W) regs[dstE] = valE;
+
+#### LSHWR_OFF_INST, LSHWI_OFF_INST:	
+
+Fetch:
+	the same.
+Decode:
+	op1 = rn;
+	op2 = imm10;
+	// op2 = rm;
+	valD = regs[rd];
+	dstE = rn;
+	dstM = rd;
+Execute:
+	if (U) valE = op1 + op2;
+	else valE = op1 - op2;
+Memory:
+	addr = P ? valE : regs[dstE];
+	if (L) valM = H ? M[addr, 2] : M[addr, 4];
+	else H ? M[addr, 2] = valD : M[addr, 4] = valD;
+Write-back:
+	pc = valP;
+	if (load) regs[dstM] = valM; // look at S2 to see if sign extend is needed
+	if (!P || W) regs[dstE] = valE;
+
+#### BRLK_INST
+
+Fetch:
+	the same.
+Decode:
+	op1 = imm24 << 2;
+	op2 = valP;
+	dstE = pc_reg_num;
+Execute:
+	valE = op1 + op2;
+Memory:
+	//
+Write-back:
+	pc = valP;
+	regs[dstE] = valE;
+	if (L) lr = valP;
+
+#### ST_INST
+# special case.
+Fetch:
+
+Decode: 
+	
+Execute:
+
+Memory:
+
+Write-back:
