@@ -260,22 +260,6 @@ int alu()
 	return tmp_result;
 }
 
-int ls_inst_remain(int inst, int offset)
-{
-	// hack the inst to be like a lsi_off_inst_t, because except the offset the rest are the same
-	lsi_off_inst_t ninst = *(lsi_off_inst_t *)&inst;
-	int addr = R(ninst.rn);
-	int baseoff = addr;
-	if (ninst.U) {
-		baseoff += offset;
-	} else {
-		baseoff -= offset;
-	}
-	if (ninst.P) {
-		addr = baseoff;
-	}
-}
-
 int decode()
 {
 	memset(&d_reg, 0xff, sizeof(d_reg));
