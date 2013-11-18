@@ -80,8 +80,6 @@ int simulate(int entry)
 
 int fetch()
 {
-	PC += 4;
-
 	int ii = ir;
 	uint32_t f29_31 = bits(ii, 29, 31);
 	uint32_t f25_28 = bits(ii, 26, 28);
@@ -112,6 +110,7 @@ int fetch()
 	f_reg.S2 = B(ii, 7);
 	f_reg.H = B(ii, 6);
 	f_reg.valP = PC + 4;
+	PC += 4;
 
 	switch(f29_31) {
 		case 0x0:
@@ -161,103 +160,103 @@ int alu()
 {
 	uint32_t carry = cmsr.C;
 	int tmp_result;
-	int V = 0, C = 0;
 	long long long_res;
-	int oper1 = E_reg.op1, oper2= E_reg.op2;
+	int op1 = E_reg.op1, op2 = E_reg.op2;
 	opcode_t opcode = E_reg.opcode;
 	switch(opcode) {
 		case AND:
-			tmp_result = oper1 & oper2;
+			tmp_result = op1 & op2;
 			break;
 		case XOR:
-			tmp_result = oper1 ^ oper2;
+			tmp_result = op1 ^ op2;
 			break;
 		case SUB:
-			tmp_result = oper1 - oper2;
-			long_res = (unsigned)(oper1 - oper2);
+			tmp_result = op1 - op2;
+			long_res = (unsigned)(op1 - op2);
 			break;
 		case RSB:
-			tmp_result = oper2 - oper1;
-			long_res = (unsigned)(oper2 - oper1);
+			tmp_result = op2 - op1;
+			long_res = (unsigned)(op2 - op1);
 			break;
 		case ADD:
-			tmp_result = oper1 + oper2;
-			long_res = (unsigned)(oper1 + oper2);
+			tmp_result = op1 + op2;
+			long_res = (unsigned)(op1 + op2);
 			break;
 		case ADC:
-			tmp_result = oper1 + oper2 + carry;
-			long_res = (unsigned)(oper1 + oper2 + carry);
+			tmp_result = op1 + op2 + carry;
+			long_res = (unsigned)(op1 + op2 + carry);
 			break;
 		case SBC:
-			tmp_result = oper1 - oper2 + carry - 1;
-			long_res = (unsigned)(oper1 - oper2 + carry - 1);
+			tmp_result = op1 - op2 + carry - 1;
+			long_res = (unsigned)(op1 - op2 + carry - 1);
 			break;
 		case RSC:
-			tmp_result = oper2 - oper1 + carry - 1;
-			long_res = (unsigned)(oper2 - oper1 + carry - 1);
+			tmp_result = op2 - op1 + carry - 1;
+			long_res = (unsigned)(op2 - op1 + carry - 1);
 			break;
 		case CAND:
-			tmp_result = oper1 & oper2;
+			tmp_result = op1 & op2;
 			break;
 		case CXOR:
-			tmp_result = oper1 ^ oper2;
+			tmp_result = op1 ^ op2;
 			break;
 		case CSUB:
-			tmp_result = oper1 - oper2;
-			long_res = (unsigned)(oper1 - oper2);
+			tmp_result = op1 - op2;
+			long_res = (unsigned)(op1 - op2);
 			break;
 		case CADD:
-			tmp_result = oper1 + oper2;
-			long_res = (unsigned)(oper1 + oper2);
+			tmp_result = op1 + op2;
+			long_res = (unsigned)(op1 + op2);
 			break;
 		case ORR:
-			tmp_result = oper1 | oper2;
+			tmp_result = op1 | op2;
 			break;
 		case MOV:
-			tmp_result = oper2;
+			tmp_result = op2;
 			break;
 		case CLB:
-			tmp_result = oper1 & (~oper2);
+			tmp_result = op1 & (~op2);
 			break;
 		case MVN:
-			tmp_result = ~oper2;
+			tmp_result = ~op2;
 			break;
 		case MUL:
-			tmp_result = oper1 * oper2;
+			tmp_result = op1 * op2;
 			break;
 		case NOP:
-			tmp_result = oper2;
+			tmp_result = op2;
 			break;
 		default:
 			printf("unkown opcode, panic!\n");
 			exit(0);
 	}
 	// set cmsr bit
-	/*
-	if (setcc && rd != 31) {
+	
+	if (E_reg.S && E_reg.dstE != 31) {
 		if (IS_LOG(opcode)) {
 			if (tmp_result == 0)
 				cmsr.Z = 1;
 			cmsr.N = B(tmp_result, 31);
+			cmsr.C = E_reg.C;
 		} else {
 			if (tmp_result == 0)
 				cmsr.Z = 1;
 			cmsr.N = B(tmp_result, 31);
-			if (B(oper1, 31) == 1 && B(oper2, 31) == 0 && B(tmp_result, 31) == 0)
+			if (B(op1, 31) == 1 && B(op2, 31) == 0 && B(tmp_result, 31) == 0)
 				cmsr.V = 1;
-			else if (B(oper1, 31) == 0 && B(oper2, 31) == 1 && B(tmp_result, 31) == 1)
+			else if (B(op1, 31) == 0 && B(op2, 31) == 1 && B(tmp_result, 31) == 1)
 				cmsr.V = 1;
 			else
 				cmsr.V = 0;
 			if (opcode == ADD || opcode == SUB || opcode == RSB || opcode == ADC
 					|| opcode == SBC || opcode == RSC || opcode == CSUB || opcode == CADD) {
-				if (long_res & 0xffffffff00000000 != 0)
+				if ((long_res & 0xffffffff00000000) != 0)
 					cmsr.C = 1;
 				else cmsr.C = 0;
 			}
 		}
 	}
-	*/
+	
 	return tmp_result;
 }
 
@@ -369,8 +368,33 @@ int decode()
 			}
 		default: break;
 	}
-	d_reg.insttype = D_reg.insttype;
 	d_reg.opcode = D_reg.opcode;
+	switch(D_reg.insttype) {
+		case MUL_INST:
+			d_reg.opcode = MUL;
+			break;
+		case BRX_INST:
+			d_reg.opcode = NOP;
+			break;
+		case LSR_OFF_INST:
+		case LSI_OFF_INST:
+		case LSHWR_OFF_INST:
+		case LSHWI_OFF_INST:
+			{
+				if (d_reg.U) d_reg.opcode = ADD;
+				else d_reg.opcode = SUB;
+				break;
+			}
+		case BRLK_INST:
+			d_reg.opcode = ADD;
+			break;
+		case ST_INST:
+			d_reg.opcode = NONE;
+			break;
+		default:
+			printf("unknown inst in Execute stage!\n");
+	}
+	d_reg.insttype = D_reg.insttype;
 	d_reg.valP = D_reg.valP;
 	d_reg.cond = D_reg.cond;
 	d_reg.S2 = D_reg.S2;

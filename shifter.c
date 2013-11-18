@@ -48,7 +48,7 @@ int shifter(shifttype_t shifttype, int n1, int n2)
 			exit(0);
 	}
 
-	temp_cmsr.C = C;
+	d_reg.C = C;
 	return res;
 }
 

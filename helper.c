@@ -103,6 +103,7 @@ void decode_stat()
 	printf("valD:\t\t%d\n", d_reg.valD);
 	printf("op1:\t\t0x%x\n", d_reg.op1);
 	printf("op2:\t\t0x%x\n", d_reg.op2);
+	printf("C:\t\t%d\n", d_reg.C);
 	printf("S:\t\t%d\n", d_reg.S);
 	printf("S2:\t\t%d\n", d_reg.S2);
 	printf("P:\t\t%d\n", d_reg.P);
@@ -122,7 +123,7 @@ void execute_stat()
 	printf("dstE:\t\t%d\n", e_reg.dstE);
 	printf("dstM:\t\t%d\n", e_reg.dstM);
 	printf("valD:\t\t%d\n", e_reg.valD);
-	printf("valE:\t\t%d\n", e_reg.valE);
+	printf("valE:\t\t0x%x\n", e_reg.valE);
 	printf("S:\t\t%d\n", e_reg.S);
 	printf("S2:\t\t%d\n", e_reg.S2);
 	printf("P:\t\t%d\n", e_reg.P);
@@ -132,6 +133,7 @@ void execute_stat()
 	printf("L:\t\t%d\n", e_reg.L);
 	printf("H:\t\t%d\n", e_reg.H);
 	printf("valP:\t\t0x%x\n", e_reg.valP);
+	print_cmsr(&cmsr);
 	printf("-------------------------------------------\n");
 }
 void memory_stat()
@@ -154,7 +156,9 @@ void memory_stat()
 	printf("cond:\t\t%x\n", m_reg.cond);
 	printf("-------------------------------------------\n");
 }
-void writeback_stat() {}
+void writeback_stat()
+{
+}
 
 char *INST_NAME(inst_type_t i) 
 {
