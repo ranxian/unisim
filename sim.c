@@ -4,55 +4,24 @@
 #include <stdlib.h>
 #include "helper.h"
 #include "shifter.h"
-
-char *V2P(int addr) {
-	int i;
-	char *src = NULL;
-	for (i = 0; i < segment_cnt; i++) {
-		if (segments[i].offset <= addr && segments[i].offset + segments[i].size >= addr - 4) {
-			src = segments[i].content + addr - segments[i].offset;
-		}
-	}
-	return src;
-}
-
-void fetch_nbyte(int addr, void *dest, int len)
-{
-	memcpy(dest, V2P(addr), len);	
-}
-
-void fetch_dword(int addr, void *dest)
-{
-	fetch_nbyte(addr, dest, 4);
-}
-
-void write_word(int addr, int word)
-{
-	memcpy(V2P(addr), &word, 4);
-}
-
-void write_byte(int addr, char byte) 
-{
-	memcpy(V2P(addr), &byte, 1);
-}
-
-void write_hword(int addr, short hword)
-{
-	memcpy(V2P(addr), &hword, 2);
-}
-
+#include "mmu.h"
 
 int simulate(int entry)
 {
 	int i;
 
 	PC = entry;
+	SP = alloc_stack();
+
+	int inst_cnt = 0;
 	// printdw(PC);
 
-	for (i = 0; i < 10; i++) {
+	for (i = 0; i < 100; i++) {
+		inst_cnt += 1;
 		printf("PC: 0x%x\n", PC);
 		// fetch
 		fetch_dword(PC, &ir);
+		printf("inst: 0x%x\n", ir);
 		printdw(ir);
 		fetch();
 		fetch_stat();
@@ -73,8 +42,10 @@ int simulate(int entry)
 		writeback();
 		writeback_stat();
 		clock_tick();
-		break; // break for debug
+		// break; // break for debug
+		getchar();
 	}
+	printf("%d inst executed\n", inst_cnt);
 	return 0;
 }
 
@@ -231,7 +202,7 @@ int alu()
 			exit(0);
 	}
 	// set cmsr bit
-	
+
 	if (E_reg.S && E_reg.dstE != 31) {
 		if (IS_LOG(opcode)) {
 			if (tmp_result == 0)
@@ -256,7 +227,7 @@ int alu()
 			}
 		}
 	}
-	
+
 	return tmp_result;
 }
 
@@ -328,7 +299,7 @@ int decode()
 		case LSI_OFF_INST:
 			{
 				d_reg.op1 = R(D_reg.rn);
-				d_reg.op2 = shifter(D_reg.shifttype, R(D_reg.rm), D_reg.shift_imm);
+				d_reg.op2 = D_reg.imm14;
 				d_reg.valD = R(D_reg.rd);
 				d_reg.dstE = D_reg.rn;
 				d_reg.dstM = D_reg.rd;
@@ -373,10 +344,11 @@ int decode()
 			d_reg.opcode = ADD;
 			break;
 		case ST_INST:
-			d_reg.opcode = NONE;
+			d_reg.opcode = NOP;
 			break;
 		default:
-			printf("unknown inst in Execute stage!\n");
+			d_reg.opcode = NOP;
+			break;
 	}
 	d_reg.insttype = D_reg.insttype;
 	d_reg.valP = D_reg.valP;
@@ -394,6 +366,7 @@ int memory()
 		{
 			int addr;
 			addr = M_reg.P ? M_reg.valE : R(M_reg.dstE);
+			printf("0x%x\n", addr);
 			if (M_reg.L) {
 				if (M_reg.B) {
 					fetch_nbyte(addr, &m_reg.valM, 1);
@@ -438,17 +411,54 @@ int memory()
 	m_reg.valE = M_reg.valE;
 	m_reg.valP = M_reg.valP;
 	m_reg.S2   = M_reg.S2;
+	m_reg.opcode = M_reg.opcode;
+	m_reg.insttype = M_reg.insttype;
 }
 
 int writeback()
 {
+	switch (W_reg.insttype) {
+		case D_IMM_SH_INST:
+		case D_REG_SH_INST:
+		case D_IMM_INST:
+			if (IS_LOG(W_reg.opcode)) {
+				regs[W_reg.dstE] = W_reg.valE;
+				printf("register #%d is updated to 0x%x\n", W_reg.dstE, W_reg.valE);
+			}
+			break;
+		case MUL_INST:
+			regs[W_reg.dstE] = W_reg.valE;
+			break;
+		case BRX_INST:
+			regs[W_reg.dstE] = W_reg.valE;
+			if (W_reg.L)
+				LR = W_reg.valP & 0xfffffffe;
+			break;
+		case LSR_OFF_INST:
+		case LSI_OFF_INST:
+		case LSHWR_OFF_INST:
+		case LSHWI_OFF_INST:
+			if (W_reg.L)
+				regs[W_reg.dstM] = W_reg.valM;
+			if (!W_reg.P || W_reg.W)
+				regs[W_reg.dstE] = W_reg.valE;
+			break;
+		case BRLK_INST:
+			regs[W_reg.dstE] = W_reg.valE;
+			printf("register #%d is updated to 0x%x\n", W_reg.dstE, W_reg.valE);
+			if (W_reg.L) LR = W_reg.valP;
+			break;
+		default:
+			printf("writeback panic\n");
+			break;
+	}
 	return 0;
 }
 
 int execute()
 {
 	inst_type_t t = E_reg.insttype;
-	
+
 	switch(t) {
 		case MUL_INST:
 			E_reg.opcode = MUL;
@@ -484,6 +494,7 @@ int execute()
 	e_reg.dstE = E_reg.dstE;
 	e_reg.dstM = E_reg.dstM;
 	e_reg.valD = E_reg.valD;
+	e_reg.opcode = E_reg.opcode;
 	COPY_SBIT(e_reg, E_reg);
 }
 

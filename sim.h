@@ -89,11 +89,12 @@ typedef struct {
 	int H;
 	int valP;
 	int cond;
+	opcode_t opcode;
 } m_reg_t;
 
 typedef struct {
 	inst_type_t insttype;
-	int opcode;
+	opcode_t opcode;
 	int dstE;
 	int dstM;
 	int valM;

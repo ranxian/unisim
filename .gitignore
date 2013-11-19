@@ -4,3 +4,4 @@ unisim
 dump.s
 test_sim
 cscope.out
+*.S

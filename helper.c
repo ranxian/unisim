@@ -120,6 +120,7 @@ void execute_stat()
 {
 	printf("EXECUTE STAGE:\n");
 	printf("insttype:\t%s\n", INST_NAME(e_reg.insttype));
+	printf("opcode:\t\t%s\n", OPCODE_NAME(e_reg.opcode));
 	printf("dstE:\t\t%d\n", e_reg.dstE);
 	printf("dstM:\t\t%d\n", e_reg.dstM);
 	printf("valD:\t\t%d\n", e_reg.valD);
@@ -140,6 +141,7 @@ void memory_stat()
 {
 	printf("MEMORY STAGE:\n");
 	printf("insttype:\t%s\n", INST_NAME(m_reg.insttype));
+	printf("opcode:\t\t%s\n", OPCODE_NAME(m_reg.opcode));
 	printf("dstE:\t\t%d\n", m_reg.dstE);
 	printf("dstM:\t\t%d\n", m_reg.dstM);
 	printf("valM:\t\t0x%x\n", m_reg.valM);

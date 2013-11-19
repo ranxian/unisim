@@ -10,6 +10,7 @@
 				|| opcode == ORR || opcode == MOV || opcode == CLB || opcode == MVN)
 #define PC (regs[31])
 #define LR (regs[30])
+#define SP (regs[29])
 #define COPY_SBIT(r1, r2) \
 	(r1.S = r2.S); \
 	(r1.P = r2.P); \

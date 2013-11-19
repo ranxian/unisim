@@ -2,8 +2,8 @@ CC=gcc
 
 all: unisim test_sim
 
-unisim:	main.c sim.o loader.o shifter.o
-	$(CC) -o unisim main.c sim.o loader.o helper.o shifter.o
+unisim:	main.c sim.o loader.o shifter.o mmu.o
+	$(CC) -o unisim main.c sim.o loader.o helper.o shifter.o mmu.o
 
 sim.o: sim.c sim.h helper.h helper.o
 	$(CC) -c sim.c
@@ -16,6 +16,9 @@ helper.o: helper.c helper.h
 
 shifter.o: shifter.c shifter.h
 	$(CC) -c shifter.c
+
+mmu.o: mmu.c mmu.h
+	$(CC) -c mmu.c
 
 test: unisim hello
 	./unisim hello
