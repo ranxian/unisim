@@ -8,6 +8,7 @@
 #define R(no) (regs[no])
 #define IS_LOG(opcode) (opcode == AND || opcode == XOR || opcode == CAND || opcode == CXOR \
 				|| opcode == ORR || opcode == MOV || opcode == CLB || opcode == MVN)
+#define NO_WRITE(opcode) (opcode == CAND || opcode == CXOR || opcode == CSUB || opcode == CADD)
 #define PC (regs[31])
 #define LR (regs[30])
 #define SP (regs[29])

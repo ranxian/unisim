@@ -53,7 +53,7 @@ int fetch()
 {
 	int ii = ir;
 	uint32_t f29_31 = bits(ii, 29, 31);
-	uint32_t f25_28 = bits(ii, 26, 28);
+	uint32_t f25_28 = bits(ii, 25, 28);
 	uint32_t f19_23 = bits(ii, 19, 23);
 	uint32_t f14_18 = bits(ii, 14, 18);
 	uint32_t f5_8 = bits(ii, 5, 8);
@@ -233,7 +233,6 @@ int alu()
 
 int decode()
 {
-	memset(&d_reg, 0xff, sizeof(d_reg));
 	switch(D_reg.insttype) {
 		case D_IMM_SH_INST:
 			{
@@ -336,7 +335,7 @@ int decode()
 		case LSHWR_OFF_INST:
 		case LSHWI_OFF_INST:
 			{
-				if (d_reg.U) d_reg.opcode = ADD;
+				if (D_reg.U == 1) d_reg.opcode = ADD;
 				else d_reg.opcode = SUB;
 				break;
 			}
@@ -347,7 +346,6 @@ int decode()
 			d_reg.opcode = NOP;
 			break;
 		default:
-			d_reg.opcode = NOP;
 			break;
 	}
 	d_reg.insttype = D_reg.insttype;
@@ -375,8 +373,10 @@ int memory()
 				}
 			} else {
 				if (M_reg.B) {
+					printf("write 0x%x to 0x%x\n", M_reg.valD & 0xff, addr);
 					write_byte(addr, M_reg.valD & 0xff);
 				} else {
+					printf("write 0x%x to 0x%x\n", M_reg.valD, addr);
 					write_word(addr, M_reg.valD);
 				}
 			}
@@ -396,8 +396,10 @@ int memory()
 			} else {
 				if (M_reg.H) {
 					write_hword(addr, M_reg.valD & 0xffff);
+					printf("write 0x%x to 0x%x\n", M_reg.valD & 0xffff, addr);
 				} else {
 					write_word(addr, M_reg.valD);
+					printf("write 0x%x to 0x%x\n", M_reg.valD, addr);
 				}
 			}
 			break;
@@ -421,7 +423,7 @@ int writeback()
 		case D_IMM_SH_INST:
 		case D_REG_SH_INST:
 		case D_IMM_INST:
-			if (IS_LOG(W_reg.opcode)) {
+			if (!NO_WRITE(W_reg.opcode)) {
 				regs[W_reg.dstE] = W_reg.valE;
 				printf("register #%d is updated to 0x%x\n", W_reg.dstE, W_reg.valE);
 			}
@@ -459,31 +461,6 @@ int execute()
 {
 	inst_type_t t = E_reg.insttype;
 
-	switch(t) {
-		case MUL_INST:
-			E_reg.opcode = MUL;
-			break;
-		case BRX_INST:
-			E_reg.opcode = NOP;
-			break;
-		case LSR_OFF_INST:
-		case LSI_OFF_INST:
-		case LSHWR_OFF_INST:
-		case LSHWI_OFF_INST:
-			{
-				if (E_reg.U) E_reg.opcode = ADD;
-				else E_reg.opcode = SUB;
-				break;
-			}
-		case BRLK_INST:
-			E_reg.opcode = ADD;
-			break;
-		case ST_INST:
-			E_reg.opcode = NONE;
-			break;
-		default:
-			printf("unknown inst in Execute stage!\n");
-	}
 	opcode_t opcode = E_reg.opcode;
 	if (!(opcode == CADD || opcode == CAND || opcode == CSUB || opcode == CXOR)) {
 		e_reg.valE = alu();

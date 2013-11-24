@@ -1,6 +1,26 @@
 #include "helper.h"
+#include "sim.h"
 #include <stdio.h>
 
+void print_regs()
+{
+	int i;
+	for (i = 0; i < 32; i++) {
+		if (i % 5 == 0) {
+			printf("\n");
+		}
+		if (i == 31) {
+			printf("PC=0x%x\t", regs[i]);
+		} else if (i == 29) {
+			printf("SP=0x%x\t", regs[i]);
+		} else if (i == 28) {
+			printf("IP=0x%x\t", regs[i]);
+		} else {
+			printf("REG[%2d]=0x%x\t", i, regs[i]);
+		}
+	}
+	printf("\n");
+}
 void printdw(int dword)
 {
 	int i;
@@ -79,7 +99,7 @@ void fetch_stat()
 	printf("H:\t\t%d\n", f_reg.H);
 	printf("valP:\t\t0x%x\n", f_reg.valP);
 	print_cmsr(&cmsr);
-
+	print_regs();
 	printf("-------------------------------------------\n");
 }
 
@@ -114,6 +134,7 @@ void decode_stat()
 	printf("H:\t\t%d\n", d_reg.H);
 	printf("valP:\t\t0x%x\n", d_reg.valP);
 	print_cmsr(&cmsr);
+	print_regs();
 	printf("-------------------------------------------\n");
 }
 void execute_stat()
@@ -135,6 +156,7 @@ void execute_stat()
 	printf("H:\t\t%d\n", e_reg.H);
 	printf("valP:\t\t0x%x\n", e_reg.valP);
 	print_cmsr(&cmsr);
+	print_regs();
 	printf("-------------------------------------------\n");
 }
 void memory_stat()
@@ -156,15 +178,19 @@ void memory_stat()
 	printf("H:\t\t%d\n", m_reg.H);
 	printf("valP:\t\t0x%x\n", m_reg.valP);
 	printf("cond:\t\t%x\n", m_reg.cond);
+	print_regs();
 	printf("-------------------------------------------\n");
 }
 void writeback_stat()
 {
+	printf("WRITEBACK STAGE:\n");
+	print_regs();
+	printf("-------------------------------------------\n");
 }
 
-char *INST_NAME(inst_type_t i) 
+char *INST_NAME(inst_type_t i)
 {
-	static char *names[] = 
+	static char *names[] =
 	{
 		"D_IMM_SH_INST", "D_REG_SH_INST", "D_IMM_INST", "MUL_INST", "BRX_INST",
 	           "LSR_OFF_INST", "LSHWR_OFF_INST", "LSHWI_OFF_INST",
@@ -173,9 +199,9 @@ char *INST_NAME(inst_type_t i)
 	return names[i];
 }
 
-char *OPCODE_NAME(opcode_t o) 
+char *OPCODE_NAME(opcode_t o)
 {
-	static char *names[] = 
+	static char *names[] =
 	{
 		"AND", "XOR", "SUB", "RSB", "ADD", "ADC", "SBC", "RSC", "CAND", "CXOR", "CSUB","CADD", "ORR", "MOV", "CLB", "MVN", "MUL", "NOP", "NONE"
 	};
@@ -184,9 +210,9 @@ char *OPCODE_NAME(opcode_t o)
 
 char *SHIFT_TYPE_NAME(shifttype_t s)
 {
-	static char *names[] = 
+	static char *names[] =
 	{
-		"SHIFT_LL", "SHIFT_LR", "SHIFT_AR", "SHIFT_LP" 
+		"SHIFT_LL", "SHIFT_LR", "SHIFT_AR", "SHIFT_LP"
 	};
 	return names[s];
 }
