@@ -110,11 +110,14 @@ Decode:
 	dstE = pc_reg_num;
 Execute:
 	valE = op1 + op2;
+	cond = CALC_COND;
 Memory:
 	//
 Write-back:
-	regs[dstE] = valE;
-	if (L) lr = valP;
+	if (cond) {
+		regs[dstE] = valE;
+		if (L) lr = valP;
+	}
 
 #### ST_INST
 # special case.

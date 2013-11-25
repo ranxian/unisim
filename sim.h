@@ -12,6 +12,9 @@ typedef enum { AND, XOR, SUB, RSB, ADD, ADC, SBC, RSC, CAND, CXOR, CSUB,
 
 typedef enum { SHIFT_LL, SHIFT_LR, SHIFT_AR, SHIFT_LP } shifttype_t;
 
+typedef enum { EQ, NE, UGE, ULT, N, NN, OV, NV, UGT, ULE, SGE, SLT, SGT,
+			   SLE, AL } cond_t;
+
 typedef struct {
 	uint32_t N:1;
 	uint32_t Z:1;
@@ -88,7 +91,7 @@ typedef struct {
 	int L;
 	int H;
 	int valP;
-	int cond;
+	int condval;
 	opcode_t opcode;
 } m_reg_t;
 
@@ -108,7 +111,7 @@ typedef struct {
 	int L;
 	int H;
 	int valP;
-	int cond;
+	int condval;
 } w_reg_t;
 
 #define REG_NUM 33
@@ -135,4 +138,6 @@ int memory();
 int writeback();
 
 int clock_tick();
+
+int condman(cond_t c);
 #endif

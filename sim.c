@@ -81,6 +81,7 @@ int fetch()
 	f_reg.S2 = B(ii, 7);
 	f_reg.H = B(ii, 6);
 	f_reg.valP = PC + 4;
+	f_reg.cond = f25_28;
 	PC += 4;
 
 	switch(f29_31) {
@@ -203,32 +204,56 @@ int alu()
 	}
 	// set cmsr bit
 
-	if (E_reg.S && E_reg.dstE != 31) {
-		if (IS_LOG(opcode)) {
-			if (tmp_result == 0)
-				cmsr.Z = 1;
-			cmsr.N = B(tmp_result, 31);
-			cmsr.C = E_reg.C;
-		} else {
-			if (tmp_result == 0)
-				cmsr.Z = 1;
-			cmsr.N = B(tmp_result, 31);
-			if (B(op1, 31) == 1 && B(op2, 31) == 0 && B(tmp_result, 31) == 0)
-				cmsr.V = 1;
-			else if (B(op1, 31) == 0 && B(op2, 31) == 1 && B(tmp_result, 31) == 1)
-				cmsr.V = 1;
-			else
-				cmsr.V = 0;
-			if (opcode == ADD || opcode == SUB || opcode == RSB || opcode == ADC
-					|| opcode == SBC || opcode == RSC || opcode == CSUB || opcode == CADD) {
-				if ((long_res & 0xffffffff00000000) != 0)
-					cmsr.C = 1;
-				else cmsr.C = 0;
+	if (E_reg.insttype == D_IMM_INST || E_reg.insttype == D_IMM_SH_INST
+		|| E_reg.insttype == D_REG_SH_INST) {
+		if (E_reg.S && E_reg.dstE != 31) {
+			if (IS_LOG(opcode)) {
+				if (tmp_result == 0)
+					cmsr.Z = 1;
+				cmsr.N = B(tmp_result, 31);
+				cmsr.C = E_reg.C;
+			} else {
+				if (tmp_result == 0)
+					cmsr.Z = 1;
+				cmsr.N = B(tmp_result, 31);
+				if (B(op1, 31) == 1 && B(op2, 31) == 0 && B(tmp_result, 31) == 0)
+					cmsr.V = 1;
+				else if (B(op1, 31) == 0 && B(op2, 31) == 1 && B(tmp_result, 31) == 1)
+					cmsr.V = 1;
+				else
+					cmsr.V = 0;
+				if (opcode == ADD || opcode == SUB || opcode == RSB || opcode == ADC
+						|| opcode == SBC || opcode == RSC || opcode == CSUB || opcode == CADD) {
+					if ((long_res & 0xffffffff00000000) != 0)
+						cmsr.C = 1;
+					else cmsr.C = 0;
+				}
 			}
 		}
 	}
 
 	return tmp_result;
+}
+
+int condman(cond_t c) {
+	switch (c) {
+		case EQ:  return cmsr.Z == 1;
+		case NE:  return cmsr.Z == 0;
+		case UGE: return cmsr.C == 1;
+		case ULT: return cmsr.C == 0;
+		case N:   return cmsr.N == 1;
+		case NN:  return cmsr.N == 0;
+		case OV:  return cmsr.V == 1;
+		case NV:  return cmsr.V == 0;
+		case UGT: return cmsr.C == 1 && cmsr.Z == 0;
+		case ULE: return cmsr.C == 0 || cmsr.Z == 1;
+		case SGE: return cmsr.N == cmsr.V;
+		case SLT: return cmsr.N != cmsr.V;
+		case SGT: return cmsr.Z == 0 && (cmsr.N == cmsr.V);
+		case SLE: return cmsr.Z == 1 || (cmsr.N != cmsr.V);
+		case AL:  return 0;
+		default:  return 0;
+	}
 }
 
 int decode()
@@ -415,6 +440,7 @@ int memory()
 	m_reg.S2   = M_reg.S2;
 	m_reg.opcode = M_reg.opcode;
 	m_reg.insttype = M_reg.insttype;
+	m_reg.condval = M_reg.condval;
 }
 
 int writeback()
@@ -446,9 +472,11 @@ int writeback()
 				regs[W_reg.dstE] = W_reg.valE;
 			break;
 		case BRLK_INST:
-			regs[W_reg.dstE] = W_reg.valE;
-			printf("register #%d is updated to 0x%x\n", W_reg.dstE, W_reg.valE);
-			if (W_reg.L) LR = W_reg.valP;
+			if (W_reg.condval) {
+				regs[W_reg.dstE] = W_reg.valE;
+				printf("register #%d is updated to 0x%x\n", W_reg.dstE, W_reg.valE);
+				if (W_reg.L) LR = W_reg.valP;
+			}
 			break;
 		default:
 			printf("writeback panic\n");
@@ -460,11 +488,14 @@ int writeback()
 int execute()
 {
 	inst_type_t t = E_reg.insttype;
-
 	opcode_t opcode = E_reg.opcode;
 	if (!(opcode == CADD || opcode == CAND || opcode == CSUB || opcode == CXOR)) {
 		e_reg.valE = alu();
 	} else alu();
+
+	if (E_reg.insttype == BRLK_INST) {
+		e_reg.condval = condman(E_reg.cond);
+	}
 
 	e_reg.valP = E_reg.valP;
 	e_reg.insttype = E_reg.insttype;

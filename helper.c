@@ -99,6 +99,7 @@ void fetch_stat()
 	printf("H:\t\t%d\n", f_reg.H);
 	printf("valP:\t\t0x%x\n", f_reg.valP);
 	print_cmsr(&cmsr);
+	printf("cond:\t\t%s\n", COND_NAME(f_reg.cond));
 	print_regs();
 	printf("-------------------------------------------\n");
 }
@@ -134,6 +135,7 @@ void decode_stat()
 	printf("H:\t\t%d\n", d_reg.H);
 	printf("valP:\t\t0x%x\n", d_reg.valP);
 	print_cmsr(&cmsr);
+	printf("cond:\t\t%s\n", COND_NAME(d_reg.cond));
 	print_regs();
 	printf("-------------------------------------------\n");
 }
@@ -156,6 +158,7 @@ void execute_stat()
 	printf("H:\t\t%d\n", e_reg.H);
 	printf("valP:\t\t0x%x\n", e_reg.valP);
 	print_cmsr(&cmsr);
+	printf("condval:\t%d\n", e_reg.condval);
 	print_regs();
 	printf("-------------------------------------------\n");
 }
@@ -177,7 +180,7 @@ void memory_stat()
 	printf("L:\t\t%d\n", m_reg.L);
 	printf("H:\t\t%d\n", m_reg.H);
 	printf("valP:\t\t0x%x\n", m_reg.valP);
-	printf("cond:\t\t%x\n", m_reg.cond);
+	printf("condval:\t%d\n", m_reg.condval);
 	print_regs();
 	printf("-------------------------------------------\n");
 }
@@ -217,3 +220,11 @@ char *SHIFT_TYPE_NAME(shifttype_t s)
 	return names[s];
 }
 
+char *COND_NAME(cond_t c) {
+	static char *names[] = 
+	{
+		"EQ", "NE", "UGE", "ULT", "N", "NN", "OV", "NV", "UGT", "ULE", "SGE", "SLT", "SGT",
+		"SLE", "AL"
+	};
+	return names[c];
+}

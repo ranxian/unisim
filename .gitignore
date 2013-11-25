@@ -1,7 +1,5 @@
 unisim
 *.o
 *.swp
-dump.s
 test_sim
 cscope.out
-*.S

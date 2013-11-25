@@ -31,6 +31,7 @@ void writeback_stat();
 char *INST_NAME(inst_type_t i);
 char *OPCODE_NAME(opcode_t o);
 char *SHIFT_TYPE_NAME(shifttype_t s);
+char *COND_NAME(cond_t c);
 
 extern stat_reg_t cmsr;
 #endif
