@@ -4,54 +4,49 @@ test1:     file format elf32-littleunicore32
 
 Disassembly of section .text:
 
-02000054 <main>:
- 2000054:	1a07001d 	mov	ip, sp
- 2000058:	70efc004 	stw	pc, [sp-], #4
- 200005c:	70ef8008 	stw	lr, [sp-], #8
- 2000060:	70ef000c 	stw	ip, [sp-], #12
- 2000064:	70ef000c 	stw	ip, [sp-], #12
- 2000068:	70eec010 	stw	fp, [sp-], #16
- 200006c:	70ef000c 	stw	ip, [sp-], #12
- 2000070:	70eec010 	stw	fp, [sp-], #16
- 2000074:	24ef4010 	sub	sp, sp, #16	; 0x10
- 2000078:	24e6c004 	sub	fp, ip, #4	; 0x4
- 200007c:	24ef4008 	sub	sp, sp, #8	; 0x8
- 2000080:	3a03c001 	mov	r15, #1	; 0x1
- 2000084:	70dbc014 	stw	r15, [fp-], #20
- 2000088:	3a03c002 	mov	r15, #2	; 0x2
- 200008c:	70dbc010 	stw	r15, [fp-], #16
- 2000090:	71db8014 	ldw	r14, [fp-], #20
- 2000094:	1a000000 	nop			(mov r0,r0)
- 2000098:	71dbc010 	ldw	r15, [fp-], #16
- 200009c:	1570000f 	cmpsub.a	r14, r15
- 20000a0:	ba000002 	bel	20000ac <main+0x58>
- 20000a4:	71dbc014 	ldw	r15, [fp-], #20
- 20000a8:	bc000001 	b	20000b0 <main+0x5c>
- 20000ac:	71dbc010 	ldw	r15, [fp-], #16
- 20000b0:	1a00000f 	mov	r0, r15
- 20000b4:	1a07001b 	mov	ip, fp
- 20000b8:	71dec00c 	ldw	fp, [fp-], #12
- 20000bc:	71e74008 	ldw	sp, [ip-], #8
- 20000c0:	71e70004 	ldw	ip, [ip-], #4
- 20000c4:	10ffc13c 	jump	ip
+02000074 <sys_exit>:
+ 2000074:	ff900001 	jepriv	0x00900001
+ 2000078:	1a07c01e 	mov	pc, lr
 
-Disassembly of section .comment:
+0200007c <sys_div>:
+ 200007c:	ff9000f0 	jepriv	0x009000f0
+ 2000080:	1a07c01e 	mov	pc, lr
 
-00000000 <.comment>:
-   0:	43434700 	undefined instruction 0x43434700
-   4:	5528203a 	undefined instruction 0x5528203a
-   8:	315f3443 	cmpand.a	r11, #4288	; 0x10c0
-   c:	675f302e 	ldb.u	ip, [r11]-, #12334
-  10:	5f616d61 	ldh.w	r5, [r12+], #705
-  14:	30313032 	undefined instruction 0x30313032
-  18:	36323131 	undefined instruction 0x36323131
-  1c:	2e342029 	rsubc	r16, r6, #2686976	; 0x290000
-  20:	00322e34 	and	r8, r6, r20 << r23
+02000084 <sys_udiv>:
+ 2000084:	ff9000f1 	jepriv	0x009000f1
+ 2000088:	1a07c01e 	mov	pc, lr
 
-Disassembly of section .UNICORE32.attributes:
+0200008c <sys_mod>:
+ 200008c:	ff9000f2 	jepriv	0x009000f2
+ 2000090:	1a07c01e 	mov	pc, lr
 
-00000000 <.UNICORE32.attributes>:
-   0:	00000f41 	and	r0, r0, r1 >> #7
-   4:	61656100 	ldw.w	r21, [r12]-, #8448
-   8:	01006962 	and.a	r1, r0, r2 >> r20
-   c:	00000005 	and	r0, r0, r5
+02000094 <sys_umod>:
+ 2000094:	ff9000f3 	jepriv	0x009000f3
+ 2000098:	1a07c01e 	mov	pc, lr
+
+0200009c <_start>:
+ 200009c:	3a03c001 	mov	r15, #1	; 0x1
+ 20000a0:	79fb800c 	ldw	r14, [pc+], #12	; 20000b0 <_start+0x14>
+ 20000a4:	1a00000f 	mov	r0, r15
+ 20000a8:	7873c000 	stw	r15, [r14+]
+ 20000ac:	bcfffff1 	b	2000074 <sys_exit>
+ 20000b0:	020080d8 	.word	0x020080d8
+
+020000b4 <__divsi3>:
+ 20000b4:	bcfffff1 	b	200007c <sys_div>
+
+020000b8 <__modsi3>:
+ 20000b8:	bcfffff4 	b	200008c <sys_mod>
+
+020000bc <__udivsi3>:
+ 20000bc:	bcfffff1 	b	2000084 <sys_udiv>
+
+020000c0 <__umodsi3>:
+ 20000c0:	bcfffff4 	b	2000094 <sys_umod>
+
+020000c4 <main>:
+ 20000c4:	79fbc00c 	ldw	r15, [pc+], #12	; 20000d4 <main+0x10>
+ 20000c8:	3a000001 	mov	r0, #1	; 0x1
+ 20000cc:	78780000 	stw	r0, [r15+]
+ 20000d0:	10ffc13e 	jump	lr
+ 20000d4:	020080d8 	.word	0x020080d8

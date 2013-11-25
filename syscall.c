@@ -5,7 +5,6 @@
 
 int syscall(int callnum, int *res)
 {
-	printf("0x%x\n", callnum);
 	switch (callnum) {
 		case SYS_putint:
 			printf("SYS_putint: %d\n", R(0));

@@ -17,34 +17,49 @@ int simulate(int entry)
 	int inst_cnt = 0;
 	// printdw(PC);
 
-	for (i = 0; i < 100; i++) {
+	for (i = 0; i < 1000; i++) {
 		inst_cnt += 1;
+		#ifdef DEBUG
 		printf("PC: 0x%x\n", PC);
+		#endif
 		// fetch
 		fetch_dword(PC, &ir);
+		#ifdef DEBUG
 		printf("inst: 0x%x\n", ir);
+		#endif
+		#ifdef DEBUG
 		printdw(ir);
+		#endif
 		fetch();
+		#ifdef DEBUG
 		fetch_stat();
+		#endif
 		clock_tick();
 		// decode
 		decode();
+		#ifdef DEBUG
 		decode_stat();
+		#endif
 		clock_tick();
 		// execute
 		execute();
+		#ifdef DEBUG
 		execute_stat();
+		#endif
 		clock_tick();
 		// memory
 		memory();
+		#ifdef DEBUG
 		memory_stat();
+		#endif
 		clock_tick();
 		// write-back
 		writeback();
+		#ifdef DEBUG
 		writeback_stat();
+		#endif
 		clock_tick();
-		// break; // break for debug
-		getchar();
+		// getchar();
 	}
 	printf("%d inst executed\n", inst_cnt);
 	return 0;
@@ -92,7 +107,7 @@ int fetch()
 			}
 			else if (B(ii, 8) == 0 && B(ii, 5) == 1)
 				f_reg.insttype = D_REG_SH_INST;
-			if (B(ii, 28)) {
+			if (B(ii, 28) == 0) {
 				if (f5_8 == 0x9)
 					f_reg.insttype = MUL_INST;
 			} else if (B(ii, 28) == 1) {
@@ -340,7 +355,6 @@ int decode()
 			}
 		case BRLK_INST:
 			{
-				printf("0x%x: 0x%d\n", D_reg.imm24, extend(D_reg.imm24, 24, 1));
 				d_reg.op1 = extend(D_reg.imm24, 24, 1) << 2;
 				d_reg.op2 = D_reg.valP;
 				d_reg.dstE = 31;
@@ -395,7 +409,7 @@ int memory()
 		{
 			int addr;
 			addr = M_reg.P ? M_reg.valE : R(M_reg.dstE);
-			printf("0x%x\n", addr);
+			// printf("0x%x\n", addr);
 			if (M_reg.L) {
 				if (M_reg.B) {
 					fetch_nbyte(addr, &m_reg.valM, 1);
@@ -404,10 +418,14 @@ int memory()
 				}
 			} else {
 				if (M_reg.B) {
+					#ifdef DEBUG
 					printf("write 0x%x to 0x%x\n", M_reg.valD & 0xff, addr);
+					#endif
 					write_byte(addr, M_reg.valD & 0xff);
 				} else {
+					#ifdef DEBUG
 					printf("write 0x%x to 0x%x\n", M_reg.valD, addr);
+					#endif
 					write_word(addr, M_reg.valD);
 				}
 			}
@@ -427,10 +445,14 @@ int memory()
 			} else {
 				if (M_reg.H) {
 					write_hword(addr, M_reg.valD & 0xffff);
+					#ifdef DEBUG
 					printf("write 0x%x to 0x%x\n", M_reg.valD & 0xffff, addr);
+					#endif
 				} else {
 					write_word(addr, M_reg.valD);
+					#ifdef DEBUG
 					printf("write 0x%x to 0x%x\n", M_reg.valD, addr);
+					#endif
 				}
 			}
 			break;
@@ -457,7 +479,9 @@ int writeback()
 		case D_IMM_INST:
 			if (!NO_WRITE(W_reg.opcode)) {
 				regs[W_reg.dstE] = W_reg.valE;
+				#ifdef DEBUG
 				printf("register #%d is updated to 0x%x\n", W_reg.dstE, W_reg.valE);
+				#endif
 			}
 			break;
 		case MUL_INST:
@@ -480,9 +504,13 @@ int writeback()
 		case BRLK_INST:
 			if (W_reg.condval) {
 				regs[W_reg.dstE] = W_reg.valE;
+				#ifdef DEBUG
 				printf("register #%d is updated to 0x%x\n", W_reg.dstE, W_reg.valE);
+				#endif
 				if (W_reg.L) LR = W_reg.valP;
 			}
+			break;
+		case ST_INST:
 			break;
 		default:
 			printf("writeback panic\n");
