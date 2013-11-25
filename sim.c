@@ -5,6 +5,7 @@
 #include "helper.h"
 #include "shifter.h"
 #include "mmu.h"
+#include "extender.h"
 
 int simulate(int entry)
 {
@@ -123,6 +124,10 @@ int fetch()
 			break;
 		default:
 			f_reg.insttype = UNKNOWN;
+	}
+
+	if (f_reg.insttype == ST_INST) {
+		syscall(f_reg.imm24);
 	}
 
 	return 1;
@@ -251,8 +256,8 @@ int condman(cond_t c) {
 		case SLT: return cmsr.N != cmsr.V;
 		case SGT: return cmsr.Z == 0 && (cmsr.N == cmsr.V);
 		case SLE: return cmsr.Z == 1 || (cmsr.N != cmsr.V);
-		case AL:  return 0;
-		default:  return 0;
+		case AL:  return 1;
+		default:  return 1;
 	}
 }
 
@@ -335,7 +340,8 @@ int decode()
 			}
 		case BRLK_INST:
 			{
-				d_reg.op1 = D_reg.imm24 << 2;
+				printf("0x%x: 0x%d\n", D_reg.imm24, extend(D_reg.imm24, 24, 1));
+				d_reg.op1 = extend(D_reg.imm24, 24, 1) << 2;
 				d_reg.op2 = D_reg.valP;
 				d_reg.dstE = 31;
 				break;
