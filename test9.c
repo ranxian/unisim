@@ -28,4 +28,6 @@ int main()
 	sys_putint(fab(6));
 	sys_putint(fab(7));
 	sys_putint(fab(8));
+	sys_putint(fab(20));
+
 }

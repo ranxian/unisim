@@ -69,6 +69,10 @@ int simulate(int entry)
 
 int fetch()
 {
+	#ifdef DEBUG
+		printf("inst: 0x%x\n", ir);
+		printdw(ir);
+	#endif
 	int ii = ir;
 	uint32_t f29_31 = bits(ii, 29, 31);
 	uint32_t f25_28 = bits(ii, 25, 28);
@@ -154,8 +158,7 @@ int alu()
 {
 	uint32_t carry = cmsr.C;
 	int tmp_result;
-	long long long_res;
-	int op1 = E_reg.op1, op2 = E_reg.op2;
+	int op1 = E_reg.op1, op2 = E_reg.op2, op3 = E_reg.op3;
 	opcode_t opcode = E_reg.opcode;
 	switch(opcode) {
 		case AND:
@@ -166,27 +169,21 @@ int alu()
 			break;
 		case SUB:
 			tmp_result = op1 - op2;
-			long_res = (unsigned)(op1 - op2);
 			break;
 		case RSB:
 			tmp_result = op2 - op1;
-			long_res = (unsigned)(op2 - op1);
 			break;
 		case ADD:
 			tmp_result = op1 + op2;
-			long_res = (unsigned)(op1 + op2);
 			break;
 		case ADC:
 			tmp_result = op1 + op2 + carry;
-			long_res = (unsigned)(op1 + op2 + carry);
 			break;
 		case SBC:
 			tmp_result = op1 - op2 + carry - 1;
-			long_res = (unsigned)(op1 - op2 + carry - 1);
 			break;
 		case RSC:
 			tmp_result = op2 - op1 + carry - 1;
-			long_res = (unsigned)(op2 - op1 + carry - 1);
 			break;
 		case CAND:
 			tmp_result = op1 & op2;
@@ -196,11 +193,9 @@ int alu()
 			break;
 		case CSUB:
 			tmp_result = op1 - op2;
-			long_res = (unsigned)(op1 - op2);
 			break;
 		case CADD:
 			tmp_result = op1 + op2;
-			long_res = (unsigned)(op1 + op2);
 			break;
 		case ORR:
 			tmp_result = op1 | op2;
@@ -215,7 +210,7 @@ int alu()
 			tmp_result = ~op2;
 			break;
 		case MUL:
-			tmp_result = op1 * op2;
+			tmp_result = op1 * op2 + op3;
 			break;
 		case NOP:
 			tmp_result = op2;
@@ -229,51 +224,50 @@ int alu()
 	if (E_reg.insttype == D_IMM_INST || E_reg.insttype == D_IMM_SH_INST
 		|| E_reg.insttype == D_REG_SH_INST) {
 		if (E_reg.S && E_reg.dstE != 31) {
-			// if (IS_LOG(opcode)) {
-			// 	cmsr.Z = tmp_result == 0;
-			// 	cmsr.N = B(tmp_result, 31);
-			// 	cmsr.C = E_reg.C;
-			// } else {
-				cmsr.Z = tmp_result == 0;
-				cmsr.N = B(tmp_result, 31);
-				switch (opcode){
-			        case SUB:
-			        case SBC:
-			        case CSUB:
-			        {
-		                cmsr.V = ((((op1^op2)>>31) != 0) && (((tmp_result^op2)>>31) == 0));
-		                unsigned t = tmp_result;
-		                t -= (opcode == SBC)? cmsr.C: 1;
-		                cmsr.C = (t < op1 || t < (~op2));
-		                break;
-		            }
-			        case RSB:
-			        case RSC:
-			        {
-		                cmsr.V = ((((op1^op2)>>31) != 0) && (((tmp_result^op1)>>31) == 0));
-		                unsigned t = tmp_result;
-		                t -= (opcode == RSC)? cmsr.C: 1;
-		                cmsr.C = (t < (~op1) || t < op2);
-		                break;
-		            }
-			        case ADD:
-			        case ADC:
-			        case CADD:
-			        {
-		                cmsr.V = ((((op1^op2)>>31) == 0) && (((tmp_result^op1)>>31) != 0));
-		                unsigned t = tmp_result;
-		                if (opcode == ADC) t -= cmsr.C;
-		                cmsr.C = (t < op1 || t < op2);
-		                break;
-		            }
-			        default:
-		                cmsr.C = E_reg.C;
-		                break;
-		        }
-			// }
+			if (opcode == MVN || opcode == MOV) {
+				int c = condman(E_reg.cond);
+				if (!c) goto end;
+			}
+			cmsr.Z = tmp_result == 0;
+			cmsr.N = B(tmp_result, 31);
+			switch (opcode){
+		        case SUB:
+		        case SBC:
+		        case CSUB:
+		        {
+	                cmsr.V = ((((op1^op2)>>31) != 0) && (((tmp_result^op2)>>31) == 0));
+	                unsigned t = tmp_result;
+	                t -= (opcode == SBC)? cmsr.C: 1;
+	                cmsr.C = (t < op1 || t < (~op2));
+	                break;
+	            }
+		        case RSB:
+		        case RSC:
+		        {
+	                cmsr.V = ((((op1^op2)>>31) != 0) && (((tmp_result^op1)>>31) == 0));
+	                unsigned t = tmp_result;
+	                t -= (opcode == RSC)? cmsr.C: 1;
+	                cmsr.C = (t < (~op1) || t < op2);
+	                break;
+	            }
+		        case ADD:
+		        case ADC:
+		        case CADD:
+		        {
+	                cmsr.V = ((((op1^op2)>>31) == 0) && (((tmp_result^op1)>>31) != 0));
+	                unsigned t = tmp_result;
+	                if (opcode == ADC) t -= cmsr.C;
+	                cmsr.C = (t < op1 || t < op2);
+	                break;
+	            }
+		        default:
+	                cmsr.C = E_reg.C;
+	                break;
+	        }
 		}
 	}
 
+	end:
 	return tmp_result;
 }
 
@@ -324,6 +318,7 @@ int decode()
 			{
 				d_reg.op1 = R(D_reg.rn);
 				d_reg.op2 = R(D_reg.rm);
+				d_reg.op3 = R(D_reg.rs);
 				d_reg.dstE = D_reg.rd;
 				break;
 			}

@@ -63,6 +63,7 @@ typedef struct {
 	int valD;
 	int op1;
 	int op2;
+	int op3;
 	int S;
 	int S2;
 	int P;

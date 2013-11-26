@@ -13,7 +13,7 @@
 void print(int *array)
 {
     int i;
-    for (i = 0; i < 3; i++) {
+    for (i = 0; i < 10; i++) {
         sys_putint(array[i]);
     }
 }
@@ -27,9 +27,6 @@ void swap(int *array, int i, int j)
 
 int partition(int array[],int left, int right)
 {
-    print(array);
-    sys_putint(left);
-    sys_putint(right);
     //p <- Get a number from array
     int p=array[left];
     //Put elements < p to the left side
@@ -45,18 +42,14 @@ int partition(int array[],int left, int right)
     }
     //Put p in the middle slot which index is pivot
     swap(array,i,left);
-        sys_putint(i);
-    sys_putint(1111111111);
-
     return i;
 }
 
 void quicksort(int array[], int left, int right)
 {
     //Do nothing if left <= right
-
-    sys_putint(left);
-    sys_putint(right);
+    print(array);
+    sys_putint(111111111);
     if(left<right)
     {
         int pivot=partition(array,left,right);
@@ -68,7 +61,7 @@ void quicksort(int array[], int left, int right)
 
 int main()
 {
-    int array[] = { 3, 1, 2 };
-    quicksort(array, 0, 3);
+    int array[] = { 3, 1, 2, 5, 7, 9, 10, 4, 2, 3, -1 };
+    quicksort(array, 0, 10);
     print(array);
 }

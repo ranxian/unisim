@@ -2,11 +2,16 @@ CC=gcc
 
 CFLAGS=
 
+OBJS=sim.o loader.o helper.o shifter.o mmu.o extender.o syscall.o
+
 all: unisim test_sim
 
-unisim:	main.c sim.o loader.o shifter.o mmu.o extender.o syscall.o
-	$(CC) $(CFLAGS) -o unisim main.c sim.o loader.o helper.o shifter.o mmu.o extender.o syscall.o
+unisim:	main.c $(OBJS)
+	$(CC) $(CFLAGS) -o unisim main.c $(OBJS)
 
+test: test.c $(OBJS)
+	$(CC) $(CFLAGS) -o test test.c $(OBJS)
+	
 sim.o: sim.c sim.h helper.h helper.o
 	$(CC) $(CFLAGS) -c sim.c
 
@@ -24,9 +29,6 @@ mmu.o: mmu.c mmu.h
 
 extender.o: extender.c extender.h
 	$(CC) $(CFLAGS) -c extender.c
-
-test: unisim hello
-	./unisim hello
 
 test_sim: sim.o test_sim.c
 	$(CC) $(CFLAGS) -o test_sim test_sim.c sim.h

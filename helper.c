@@ -34,9 +34,9 @@ void printdw(int dword)
 	printf("\n");
 }
 
-void print_cmsr(stat_reg_t *r)
+void print_cmsr()
 {
-	printf("CMSR:\t\tN=%d  Z=%d  C=%d  V=%d\n", r->N, r->Z, r->C, r->V);
+	printf("CMSR:\t\tN=%d  Z=%d  C=%d  V=%d\n", cmsr.N, cmsr.Z, cmsr.C, cmsr.V);
 }
 
 void print_inst_name(inst_type_t type)
@@ -98,7 +98,7 @@ void fetch_stat()
 	printf("L:\t\t%d\n", f_reg.L);
 	printf("H:\t\t%d\n", f_reg.H);
 	printf("valP:\t\t0x%x\n", f_reg.valP);
-	print_cmsr(&cmsr);
+	print_cmsr();
 	printf("cond:\t\t%s\n", COND_NAME(f_reg.cond));
 	print_regs();
 	printf("-------------------------------------------\n");
@@ -134,7 +134,7 @@ void decode_stat()
 	printf("L:\t\t%d\n", d_reg.L);
 	printf("H:\t\t%d\n", d_reg.H);
 	printf("valP:\t\t0x%x\n", d_reg.valP);
-	print_cmsr(&cmsr);
+	print_cmsr();
 	printf("cond:\t\t%s\n", COND_NAME(d_reg.cond));
 	print_regs();
 	printf("-------------------------------------------\n");
@@ -157,7 +157,7 @@ void execute_stat()
 	printf("L:\t\t%d\n", e_reg.L);
 	printf("H:\t\t%d\n", e_reg.H);
 	printf("valP:\t\t0x%x\n", e_reg.valP);
-	print_cmsr(&cmsr);
+	print_cmsr();
 	printf("condval:\t%d\n", e_reg.condval);
 	print_regs();
 	printf("-------------------------------------------\n");

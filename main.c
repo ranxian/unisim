@@ -5,10 +5,8 @@
 #include "sim.h"
 uint32_t segment_cnt;
 segment_t segments[MAX_SEG_CNT];
-int pc;
-int ir;
-int lr;
 int regs[REG_NUM];
+int ir;
 stat_reg_t cmsr, temp_cmsr;
 d_reg_t f_reg, D_reg;
 e_reg_t d_reg, E_reg;
