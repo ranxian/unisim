@@ -3,3 +3,4 @@ unisim
 *.swp
 test_sim
 cscope.out
+*.S

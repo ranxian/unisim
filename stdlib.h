@@ -54,6 +54,8 @@ syscall2(0x9000f2, sys_mod, int, int, a, int, b);
 syscall2(0x9000f3, sys_umod, uint32_t, uint32_t, a, uint32_t, b);
 syscall1(0x9000f4, sys_putint, int, int, num);
 syscall1(0x9000f5, sys_putuint, int, uint32_t, num);
+syscall1(0x9000f6, sys_prints, int, uint32_t, num);
+
 // void sys_putint(int num);
 
 extern int main();
