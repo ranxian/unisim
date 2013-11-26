@@ -1,6 +1,6 @@
 CC=gcc
 
-CLAGS=-DDEBUG
+CFLAGS=
 
 all: unisim test_sim
 

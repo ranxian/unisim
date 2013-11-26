@@ -17,7 +17,7 @@ int simulate(int entry)
 	int inst_cnt = 0;
 	// printdw(PC);
 
-	for (i = 0; i < 1000; i++) {
+	for (i = 0; ; i++) {
 		inst_cnt += 1;
 		#ifdef DEBUG
 		printf("PC: 0x%x\n", PC);
@@ -59,7 +59,9 @@ int simulate(int entry)
 		writeback_stat();
 		#endif
 		clock_tick();
-		// getchar();
+		#ifdef DEBUG
+		getchar();
+		#endif
 	}
 	printf("%d inst executed\n", inst_cnt);
 	return 0;
@@ -227,28 +229,48 @@ int alu()
 	if (E_reg.insttype == D_IMM_INST || E_reg.insttype == D_IMM_SH_INST
 		|| E_reg.insttype == D_REG_SH_INST) {
 		if (E_reg.S && E_reg.dstE != 31) {
-			if (IS_LOG(opcode)) {
-				if (tmp_result == 0)
-					cmsr.Z = 1;
+			// if (IS_LOG(opcode)) {
+			// 	cmsr.Z = tmp_result == 0;
+			// 	cmsr.N = B(tmp_result, 31);
+			// 	cmsr.C = E_reg.C;
+			// } else {
+				cmsr.Z = tmp_result == 0;
 				cmsr.N = B(tmp_result, 31);
-				cmsr.C = E_reg.C;
-			} else {
-				if (tmp_result == 0)
-					cmsr.Z = 1;
-				cmsr.N = B(tmp_result, 31);
-				if (B(op1, 31) == 1 && B(op2, 31) == 0 && B(tmp_result, 31) == 0)
-					cmsr.V = 1;
-				else if (B(op1, 31) == 0 && B(op2, 31) == 1 && B(tmp_result, 31) == 1)
-					cmsr.V = 1;
-				else
-					cmsr.V = 0;
-				if (opcode == ADD || opcode == SUB || opcode == RSB || opcode == ADC
-						|| opcode == SBC || opcode == RSC || opcode == CSUB || opcode == CADD) {
-					if ((long_res & 0xffffffff00000000) != 0)
-						cmsr.C = 1;
-					else cmsr.C = 0;
-				}
-			}
+				switch (opcode){
+			        case SUB:
+			        case SBC:
+			        case CSUB:
+			        {
+		                cmsr.V = ((((op1^op2)>>31) != 0) && (((tmp_result^op2)>>31) == 0));
+		                unsigned t = tmp_result;
+		                t -= (opcode == SBC)? cmsr.C: 1;
+		                cmsr.C = (t < op1 || t < (~op2));
+		                break;
+		            }
+			        case RSB:
+			        case RSC:
+			        {
+		                cmsr.V = ((((op1^op2)>>31) != 0) && (((tmp_result^op1)>>31) == 0));
+		                unsigned t = tmp_result;
+		                t -= (opcode == RSC)? cmsr.C: 1;
+		                cmsr.C = (t < (~op1) || t < op2);
+		                break;
+		            }
+			        case ADD:
+			        case ADC:
+			        case CADD:
+			        {
+		                cmsr.V = ((((op1^op2)>>31) == 0) && (((tmp_result^op1)>>31) != 0));
+		                unsigned t = tmp_result;
+		                if (opcode == ADC) t -= cmsr.C;
+		                cmsr.C = (t < op1 || t < op2);
+		                break;
+		            }
+			        default:
+		                cmsr.C = E_reg.C;
+		                break;
+		        }
+			// }
 		}
 	}
 
@@ -278,6 +300,11 @@ int condman(cond_t c) {
 
 int decode()
 {
+	d_reg.insttype = D_reg.insttype;
+	d_reg.valP = D_reg.valP;
+	d_reg.cond = D_reg.cond;
+	d_reg.S2 = D_reg.S2;
+	COPY_SBIT(d_reg, D_reg);
 	switch(D_reg.insttype) {
 		case D_IMM_SH_INST:
 			{
@@ -393,11 +420,11 @@ int decode()
 		default:
 			break;
 	}
-	d_reg.insttype = D_reg.insttype;
-	d_reg.valP = D_reg.valP;
-	d_reg.cond = D_reg.cond;
-	d_reg.S2 = D_reg.S2;
-	COPY_SBIT(d_reg, D_reg);
+	if (D_reg.insttype == D_IMM_INST || D_reg.insttype == D_IMM_SH_INST
+		|| D_reg.insttype == D_REG_SH_INST) {
+		d_reg.cond = (D_reg.rn & 0x10) ? (D_reg.rn & 0xf) : AL;
+	}
+
 	return 0;
 }
 
@@ -478,7 +505,14 @@ int writeback()
 		case D_REG_SH_INST:
 		case D_IMM_INST:
 			if (!NO_WRITE(W_reg.opcode)) {
-				regs[W_reg.dstE] = W_reg.valE;
+				if (W_reg.opcode == MVN || W_reg.opcode == MOV) {
+					if (W_reg.condval) {
+						regs[W_reg.dstE] = W_reg.valE;	
+					}	
+				} else {
+					regs[W_reg.dstE] = W_reg.valE;
+				}
+				
 				#ifdef DEBUG
 				printf("register #%d is updated to 0x%x\n", W_reg.dstE, W_reg.valE);
 				#endif
@@ -521,13 +555,11 @@ int writeback()
 
 int execute()
 {
-	inst_type_t t = E_reg.insttype;
 	opcode_t opcode = E_reg.opcode;
-	if (!(opcode == CADD || opcode == CAND || opcode == CSUB || opcode == CXOR)) {
-		e_reg.valE = alu();
-	} else alu();
+	e_reg.valE = alu();
 
-	if (E_reg.insttype == BRLK_INST) {
+	if (E_reg.insttype == BRLK_INST || E_reg.insttype == D_IMM_SH_INST ||
+		E_reg.insttype == D_IMM_INST || E_reg.insttype == D_REG_SH_INST) {
 		e_reg.condval = condman(E_reg.cond);
 	}
 
