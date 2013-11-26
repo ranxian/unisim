@@ -44,6 +44,7 @@ void test_instructions()
 	int inst;
 	PC = 0x80000000;
 	SP = alloc_stack();
+	alloc_cs();
 
 	// sub sp, sp, #4
 	ir = 0x24ef4004;
@@ -132,7 +133,16 @@ void test_instructions()
 	assert(regs[21] == 0xaaaa);
 	assert(regs[20] == 0x1fffff0);
 	assert(cmsr.N == 0 && cmsr.Z == 0 && cmsr.C == 0 && cmsr.V == 0);
+
+	// ldw	r15, [pc+], #188	; 20001ec <add_prime+0xe8>
+	ir = 0x79fbc0bc;
+	PC = 0x200012c;
+	write_word(0x20001ec, 0x020082cc);
+	go();
+	assert(regs[15] == 0x020082cc);
+	assert(PC == 0x2000130);
 	printf("ldw passed\n");
+
 
 	// cmpsub.a	r23, r24
 	ir =0x15b80018;
@@ -141,7 +151,7 @@ void test_instructions()
 	go();
 	assert(regs[24] == -1);
 	assert(regs[23] == 5);
-	assert(cmsr.N == 0 && cmsr.Z == 0 && cmsr.C == 0 && cmsr.V == 0);
+	assert(cmsr.N == 0 && cmsr.Z == 0 && cmsr.C == 1 && cmsr.V == 0);
 
 	regs[23] = 0;
 	regs[24] = 1;
@@ -185,6 +195,67 @@ void test_instructions()
 	assert(PC == 0x20001a8);
 	printf("beg passed\n");
 
+	// cmpadd.a	r0, sl
+	ir = 0x1700001a;
+	regs[0] = 1;
+	regs[26] = -1;
+	go();
+
+	// beq	2000244 <main+0x50>
+	ir = 0xa0fffff8;
+	PC = 0x2000260;
+	go();
+	assert(PC == 0x2000244);
+	printf("cmpadd.a beq passed.\n");
+
+	// cmpsub.a r15, #0	; 0x0
+	ir = 0x35780000;
+	regs[15] = 0;
+	go();
+
+	// beb	2000244 <main+0x50>
+	ir = 0xb2fffff5;
+	PC = 0x200026c;
+	go();
+	print_cmsr();
+	assert(PC == 0x2000244);
+	printf("beb passed\n");
+
+	// cmpsub.a	r15, sl
+	ir = 0x1578001a;
+	regs[15] = 123;
+	regs[26] = 11;
+	go();
+
+	// bua	200028c <main+0x98>
+	ir = 0xb0fffffa;
+	PC = 0x20002a0;
+	go();
+	assert(PC == 0x200028c);
+	printf("bua passed\n");
+
+	// mul	r15, r1, r1
+	ir = 0x000bc121;
+	regs[15] = 1;
+	regs[1] = -1;
+	go();
+	assert(regs[15] == 1); 
+	printf("mul inst passed\n");
+
+	// 1500000f 	cmpsub.a	r0, r15
+	ir = 0x1500000f;
+	regs[0] = 25;
+	regs[15] = 25;
+	go();
+ 	print_cmsr();
+ 	
+	// a600000a 	bub	2000178 <add_prime+0x74>
+ 	ir = 0xa600000a;
+ 	PC = 0x200014c;
+ 	go();
+ 	print_cmsr();
+ 	assert(PC != 0x2000178);
+ 	printf("bub passed\n");
 
 	printf("instruction test passed.\n");
 }

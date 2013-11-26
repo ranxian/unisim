@@ -4,6 +4,9 @@
 #define STACK_START 0x1000000
 #define STACK_SIZE  0x1000000
 #define STACK_TOP	0x2000000
+#define CS_START	0x2000004
+#define CS_SIZE		0x1000000
+#define CS_END		0x3000004
 
 char *V2P(int addr);
 
@@ -18,4 +21,6 @@ void write_byte(int addr, char byte);
 void write_hword(int addr, short hword);
 
 int alloc_stack();
+
+int alloc_cs();
 #endif

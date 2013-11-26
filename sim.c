@@ -148,7 +148,7 @@ int fetch()
 	}
 
 	if (f_reg.insttype == ST_INST) {
-		syscall(f_reg.imm24);
+		regs[0] = syscall(f_reg.imm24);
 	}
 
 	return 1;
@@ -210,6 +210,7 @@ int alu()
 			tmp_result = ~op2;
 			break;
 		case MUL:
+			printf("mul: %d*%d\n", op1, op2);
 			tmp_result = op1 * op2 + op3;
 			break;
 		case NOP:
@@ -238,7 +239,8 @@ int alu()
 	                cmsr.V = ((((op1^op2)>>31) != 0) && (((tmp_result^op2)>>31) == 0));
 	                unsigned t = tmp_result;
 	                t -= (opcode == SBC)? cmsr.C: 1;
-	                cmsr.C = (t < op1 || t < (~op2));
+	                cmsr.C = (op1 >= op2);
+	                // cmsr.C = (t < op1 || t < (~op2));
 	                break;
 	            }
 		        case RSB:
@@ -247,7 +249,8 @@ int alu()
 	                cmsr.V = ((((op1^op2)>>31) != 0) && (((tmp_result^op1)>>31) == 0));
 	                unsigned t = tmp_result;
 	                t -= (opcode == RSC)? cmsr.C: 1;
-	                cmsr.C = (t < (~op1) || t < op2);
+	                // cmsr.C = (t < (~op1) || t < op2)
+	                cmsr.C = (op1 < op2);
 	                break;
 	            }
 		        case ADD:
@@ -265,6 +268,11 @@ int alu()
 	                break;
 	        }
 		}
+	}
+
+	if (E_reg.insttype == MUL_INST && E_reg.S) {
+		cmsr.N = B(tmp_result, 31);
+		cmsr.Z = (tmp_result == 0);
 	}
 
 	end:
@@ -318,7 +326,7 @@ int decode()
 			{
 				d_reg.op1 = R(D_reg.rn);
 				d_reg.op2 = R(D_reg.rm);
-				d_reg.op3 = R(D_reg.rs);
+				d_reg.op3 = D_reg.rs ? R(D_reg.rs) : 0;
 				d_reg.dstE = D_reg.rd;
 				break;
 			}
@@ -508,12 +516,13 @@ int writeback()
 					regs[W_reg.dstE] = W_reg.valE;
 				}
 				
-				#ifdef DEBUG
+				// #ifdef DEBUG
 				printf("register #%d is updated to 0x%x\n", W_reg.dstE, W_reg.valE);
-				#endif
+				// #endif
 			}
 			break;
 		case MUL_INST:
+			printf("register #%d is updated to 0x%x\n", W_reg.dstE, W_reg.valE);
 			regs[W_reg.dstE] = W_reg.valE;
 			break;
 		case BRX_INST:
@@ -532,6 +541,7 @@ int writeback()
 			break;
 		case BRLK_INST:
 			if (W_reg.condval) {
+				print_cmsr();
 				regs[W_reg.dstE] = W_reg.valE;
 				#ifdef DEBUG
 				printf("register #%d is updated to 0x%x\n", W_reg.dstE, W_reg.valE);

@@ -3,8 +3,11 @@
 unsigned primes[MAX], n = 3;
 int add_prime(unsigned num){
         int i;
-        for (i = 2; i < n; ++i){
+        for (i = 2; i < MAX; ++i){
                 if (primes[i] * primes[i] > num){
+                        sys_putint(7123876);
+                        sys_putint(primes[i]);
+                        sys_putint(num);
                         primes[n++] = num;
                         return 1;
                 }
