@@ -1,6 +1,6 @@
 CC=gcc
 
-CFLAGS=
+CFLAGS=-DDEBUG
 
 OBJS=sim.o loader.o helper.o shifter.o mmu.o extender.o syscall.o
 

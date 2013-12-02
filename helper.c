@@ -39,67 +39,33 @@ void print_cmsr()
 	printf("CMSR:\t\tN=%d  Z=%d  C=%d  V=%d\n", cmsr.N, cmsr.Z, cmsr.C, cmsr.V);
 }
 
-void print_inst_name(inst_type_t type)
-{
-	printf("insttype:\t");
-	switch(type) {
-		case D_IMM_SH_INST:
-			printf("d_imm_sh_inst\n");
-			break;
-		case D_REG_SH_INST:
-			printf("d_reg_sh_inst\n"); break;
-		case MUL_INST:
-			printf("mul_inst\n"); break;
-		case BRX_INST:
-			printf("brx_inst\n"); break;
-		case D_IMM_INST:
-			printf("d_imm_inst\n"); break;
-		case LSR_OFF_INST:
-			printf("lst_off_inst"); break;
-		case LSHWR_OFF_INST:
-			printf("lshwr_off_inst\n"); break;
-		case LSHWI_OFF_INST:
-			printf("lshwi_off_inst\n"); break;
-		case LSI_OFF_INST:
-			printf("lsi_off_inst\n");
-			break;
-		case ST_INST:
-			printf("st_inst\n"); break;
-		case BRLK_INST:
-			printf("brlk_inst\n"); break;
-		case UNKNOWN:
-			printf("unknown\n"); break;
-		default:
-			printf("inst_info panic\n"); break;
-	}
-}
 
-void fetch_stat()
+void decode_stat()
 {
-	printf("FETCH STAGE:\n");
-	print_inst_name(f_reg.insttype);
-	printf("opcode:\t\t%s\n", OPCODE_NAME(f_reg.opcode));
-	printf("Rn:\t\t%d\n", f_reg.rn);
-	printf("Rd:\t\t%d\n", f_reg.rd);
-	printf("Rm:\t\t%d\n", f_reg.rm);
-	printf("Rs:\t\t%d\n", f_reg.rs);
-	printf("rotate:\t\t%d\n", f_reg.rotate);
-	printf("cond:\t\t0x%x\n", f_reg.cond);
-	printf("imm9:\t\t0x%x\n", f_reg.imm9);
-	printf("hioff:\t\t0x%x\n", f_reg.hioff);
-	printf("lowoff:\t\t0x%x\n", f_reg.lowoff);
-	printf("imm14:\t\t0x%x\n", f_reg.imm14);
-	printf("imm24:\t\t0x%x\n", f_reg.imm24);
-	printf("S:\t\t%d\n", f_reg.S);
-	printf("P:\t\t%d\n", f_reg.P);
-	printf("U:\t\t%d\n", f_reg.U);
-	printf("B:\t\t%d\n", f_reg.B);
-	printf("W:\t\t%d\n", f_reg.W);
-	printf("L:\t\t%d\n", f_reg.L);
-	printf("H:\t\t%d\n", f_reg.H);
-	printf("valP:\t\t0x%x\n", f_reg.valP);
+	printf("DECODE STAGE:\n");
+	printf("insttype:\t%s\n", INST_NAME(D_reg.insttype));
+	printf("opcode:\t\t%s\n", OPCODE_NAME(D_reg.opcode));
+	printf("Rn:\t\t%d\n", D_reg.rn);
+	printf("Rd:\t\t%d\n", D_reg.rd);
+	printf("Rm:\t\t%d\n", D_reg.rm);
+	printf("Rs:\t\t%d\n", D_reg.rs);
+	printf("rotate:\t\t%d\n", D_reg.rotate);
+	printf("cond:\t\t0x%x\n", D_reg.cond);
+	printf("imm9:\t\t0x%x\n", D_reg.imm9);
+	printf("hioff:\t\t0x%x\n", D_reg.hioff);
+	printf("lowoff:\t\t0x%x\n", D_reg.lowoff);
+	printf("imm14:\t\t0x%x\n", D_reg.imm14);
+	printf("imm24:\t\t0x%x\n", D_reg.imm24);
+	printf("S:\t\t%d\n", D_reg.S);
+	printf("P:\t\t%d\n", D_reg.P);
+	printf("U:\t\t%d\n", D_reg.U);
+	printf("B:\t\t%d\n", D_reg.B);
+	printf("W:\t\t%d\n", D_reg.W);
+	printf("L:\t\t%d\n", D_reg.L);
+	printf("H:\t\t%d\n", D_reg.H);
+	printf("valP:\t\t0x%x\n", D_reg.valP);
 	print_cmsr();
-	printf("cond:\t\t%s\n", COND_NAME(f_reg.cond));
+	printf("cond:\t\t%s\n", COND_NAME(D_reg.cond));
 	print_regs();
 	printf("-------------------------------------------\n");
 }
@@ -114,79 +80,79 @@ uint32_t bits(int dword, int start, int end)
 	return (dword & res) >> start;
 }
 
-void decode_stat()
-{
-	printf("DECODE STAGE:\n");
-	print_inst_name(d_reg.insttype);
-	printf("opcode:\t\t%s\n", OPCODE_NAME(d_reg.opcode));
-	printf("dstE:\t\t%d\n", d_reg.dstE);
-	printf("dstM:\t\t%d\n", d_reg.dstM);
-	printf("valD:\t\t%d\n", d_reg.valD);
-	printf("op1:\t\t0x%x\n", d_reg.op1);
-	printf("op2:\t\t0x%x\n", d_reg.op2);
-	printf("C:\t\t%d\n", d_reg.C);
-	printf("S:\t\t%d\n", d_reg.S);
-	printf("S2:\t\t%d\n", d_reg.S2);
-	printf("P:\t\t%d\n", d_reg.P);
-	printf("U:\t\t%d\n", d_reg.U);
-	printf("B:\t\t%d\n", d_reg.B);
-	printf("W:\t\t%d\n", d_reg.W);
-	printf("L:\t\t%d\n", d_reg.L);
-	printf("H:\t\t%d\n", d_reg.H);
-	printf("valP:\t\t0x%x\n", d_reg.valP);
-	print_cmsr();
-	printf("cond:\t\t%s\n", COND_NAME(d_reg.cond));
-	print_regs();
-	printf("-------------------------------------------\n");
-}
 void execute_stat()
 {
 	printf("EXECUTE STAGE:\n");
-	printf("insttype:\t%s\n", INST_NAME(e_reg.insttype));
-	printf("opcode:\t\t%s\n", OPCODE_NAME(e_reg.opcode));
-	printf("dstE:\t\t%d\n", e_reg.dstE);
-	printf("dstM:\t\t%d\n", e_reg.dstM);
-	printf("valD:\t\t%d\n", e_reg.valD);
-	printf("valE:\t\t0x%x\n", e_reg.valE);
-	printf("S:\t\t%d\n", e_reg.S);
-	printf("S2:\t\t%d\n", e_reg.S2);
-	printf("P:\t\t%d\n", e_reg.P);
-	printf("U:\t\t%d\n", e_reg.U);
-	printf("B:\t\t%d\n", e_reg.B);
-	printf("W:\t\t%d\n", e_reg.W);
-	printf("L:\t\t%d\n", e_reg.L);
-	printf("H:\t\t%d\n", e_reg.H);
-	printf("valP:\t\t0x%x\n", e_reg.valP);
+	printf("insttype:\t%s\n", INST_NAME(E_reg.insttype));
+	printf("opcode:\t\t%s\n", OPCODE_NAME(E_reg.opcode));
+	printf("dstE:\t\t%d\n", E_reg.dstE);
+	printf("dstM:\t\t%d\n", E_reg.dstM);
+	printf("valD:\t\t%d\n", E_reg.valD);
+	printf("op1:\t\t0x%x\n", E_reg.op1);
+	printf("op2:\t\t0x%x\n", E_reg.op2);
+	printf("C:\t\t%d\n", E_reg.C);
+	printf("S:\t\t%d\n", E_reg.S);
+	printf("S2:\t\t%d\n", E_reg.S2);
+	printf("P:\t\t%d\n", E_reg.P);
+	printf("U:\t\t%d\n", E_reg.U);
+	printf("B:\t\t%d\n", E_reg.B);
+	printf("W:\t\t%d\n", E_reg.W);
+	printf("L:\t\t%d\n", E_reg.L);
+	printf("H:\t\t%d\n", E_reg.H);
+	printf("valP:\t\t0x%x\n", E_reg.valP);
 	print_cmsr();
-	printf("condval:\t%d\n", e_reg.condval);
+	printf("cond:\t\t%s\n", COND_NAME(E_reg.cond));
 	print_regs();
 	printf("-------------------------------------------\n");
 }
 void memory_stat()
 {
 	printf("MEMORY STAGE:\n");
-	printf("insttype:\t%s\n", INST_NAME(m_reg.insttype));
-	printf("opcode:\t\t%s\n", OPCODE_NAME(m_reg.opcode));
-	printf("dstE:\t\t%d\n", m_reg.dstE);
-	printf("dstM:\t\t%d\n", m_reg.dstM);
-	printf("valM:\t\t0x%x\n", m_reg.valM);
-	printf("valE:\t\t0x%x\n", m_reg.valE);
-	printf("S:\t\t%d\n", m_reg.S);
-	printf("S2:\t\t%d\n", m_reg.S2);
-	printf("P:\t\t%d\n", m_reg.P);
-	printf("U:\t\t%d\n", m_reg.U);
-	printf("B:\t\t%d\n", m_reg.B);
-	printf("W:\t\t%d\n", m_reg.W);
-	printf("L:\t\t%d\n", m_reg.L);
-	printf("H:\t\t%d\n", m_reg.H);
-	printf("valP:\t\t0x%x\n", m_reg.valP);
-	printf("condval:\t%d\n", m_reg.condval);
+	printf("insttype:\t%s\n", INST_NAME(M_reg.insttype));
+	printf("opcode:\t\t%s\n", OPCODE_NAME(M_reg.opcode));
+	printf("dstE:\t\t%d\n", M_reg.dstE);
+	printf("dstM:\t\t%d\n", M_reg.dstM);
+	printf("valD:\t\t%d\n", M_reg.valD);
+	printf("valE:\t\t0x%x\n", M_reg.valE);
+	printf("S:\t\t%d\n", M_reg.S);
+	printf("S2:\t\t%d\n", M_reg.S2);
+	printf("P:\t\t%d\n", M_reg.P);
+	printf("U:\t\t%d\n", M_reg.U);
+	printf("B:\t\t%d\n", M_reg.B);
+	printf("W:\t\t%d\n", M_reg.W);
+	printf("L:\t\t%d\n", M_reg.L);
+	printf("H:\t\t%d\n", M_reg.H);
+	printf("valP:\t\t0x%x\n", M_reg.valP);
+	print_cmsr();
+	printf("condval:\t%d\n", M_reg.condval);
 	print_regs();
 	printf("-------------------------------------------\n");
 }
 void writeback_stat()
 {
 	printf("WRITEBACK STAGE:\n");
+	printf("insttype:\t%s\n", INST_NAME(W_reg.insttype));
+	printf("opcode:\t\t%s\n", OPCODE_NAME(W_reg.opcode));
+	printf("dstE:\t\t%d\n", W_reg.dstE);
+	printf("dstM:\t\t%d\n", W_reg.dstM);
+	printf("valM:\t\t0x%x\n", W_reg.valM);
+	printf("valE:\t\t0x%x\n", W_reg.valE);
+	printf("S:\t\t%d\n", W_reg.S);
+	printf("S2:\t\t%d\n", W_reg.S2);
+	printf("P:\t\t%d\n", W_reg.P);
+	printf("U:\t\t%d\n", W_reg.U);
+	printf("B:\t\t%d\n", W_reg.B);
+	printf("W:\t\t%d\n", W_reg.W);
+	printf("L:\t\t%d\n", W_reg.L);
+	printf("H:\t\t%d\n", W_reg.H);
+	printf("valP:\t\t0x%x\n", W_reg.valP);
+	printf("condval:\t%d\n", W_reg.condval);
+	print_regs();
+	printf("-------------------------------------------\n");
+}
+void end_stat()
+{
+	printf("INSTEND:\n");
 	print_regs();
 	printf("-------------------------------------------\n");
 }
@@ -197,7 +163,7 @@ char *INST_NAME(inst_type_t i)
 	{
 		"D_IMM_SH_INST", "D_REG_SH_INST", "D_IMM_INST", "MUL_INST", "BRX_INST",
 	           "LSR_OFF_INST", "LSHWR_OFF_INST", "LSHWI_OFF_INST",
-			   "LSI_OFF_INST", "ST_INST", "BRLK_INST", "UNKNOWN"
+			   "LSI_OFF_INST", "ST_INST", "BRLK_INST", "UNKNOWN", "INOP"
 	};
 	return names[i];
 }

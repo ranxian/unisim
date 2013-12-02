@@ -7,6 +7,7 @@
 #include "mmu.h"
 #include "extender.h"
 
+int ncycle = 0;
 int simulate(int entry)
 {
 	int i;
@@ -15,49 +16,22 @@ int simulate(int entry)
 	SP = alloc_stack();
 
 	int inst_cnt = 0;
-	// printdw(PC);
-
+	D_reg.insttype = E_reg.insttype = M_reg.insttype = W_reg.insttype = INOP;
 	for (i = 0; ; i++) {
 		inst_cnt += 1;
-		#ifdef DEBUG
-		printf("PC: 0x%x\n", PC);
-		#endif
-		// fetch
-		fetch_dword(PC, &ir);
-		#ifdef DEBUG
-		printf("inst: 0x%x\n", ir);
-		#endif
-		#ifdef DEBUG
-		printdw(ir);
-		#endif
-		fetch();
-		#ifdef DEBUG
-		fetch_stat();
-		#endif
-		clock_tick();
-		// decode
-		decode();
-		#ifdef DEBUG
-		decode_stat();
-		#endif
-		clock_tick();
-		// execute
-		execute();
-		#ifdef DEBUG
-		execute_stat();
-		#endif
-		clock_tick();
-		// memory
-		memory();
-		#ifdef DEBUG
-		memory_stat();
-		#endif
-		clock_tick();
-		// write-back
+		gen_pipe_consig();
+
 		writeback();
-		#ifdef DEBUG
-		writeback_stat();
-		#endif
+		
+		memory();
+		
+		execute();
+		
+		decode();
+		
+		if (!F_stall)
+			fetch();
+		
 		clock_tick();
 		#ifdef DEBUG
 		getchar();
@@ -69,9 +43,19 @@ int simulate(int entry)
 
 int fetch()
 {
+	// Should have jump
+	if (E_reg.insttype == BRLK_INST && e_reg.condval) {
+		PC = e_reg.valE;
+		printf("PC forward from e_reg.valE with value 0x%x\n", e_reg.valE);
+	}
+		
+	fetch_dword(PC, &ir);
 	#ifdef DEBUG
-		printf("inst: 0x%x\n", ir);
+		printf("FETCH STAGE:\n");
+		printf("PC:\t\t0x%x\n", PC);
+		printf("inst:\t\t0x%x\n", ir);
 		printdw(ir);
+		printf("-------------------------------------------\n");
 	#endif
 	int ii = ir;
 	uint32_t f29_31 = bits(ii, 29, 31);
@@ -237,8 +221,8 @@ int alu()
 		        case CSUB:
 		        {
 	                cmsr.V = ((((op1^op2)>>31) != 0) && (((tmp_result^op2)>>31) == 0));
-	                unsigned t = tmp_result;
-	                t -= (opcode == SBC)? cmsr.C: 1;
+	                // unsigned t = tmp_result;
+	                // t -= (opcode == SBC)? cmsr.C: 1;
 	                cmsr.C = (op1 >= op2);
 	                // cmsr.C = (t < op1 || t < (~op2));
 	                break;
@@ -247,8 +231,8 @@ int alu()
 		        case RSC:
 		        {
 	                cmsr.V = ((((op1^op2)>>31) != 0) && (((tmp_result^op1)>>31) == 0));
-	                unsigned t = tmp_result;
-	                t -= (opcode == RSC)? cmsr.C: 1;
+	                // unsigned t = tmp_result;
+	                // t -= (opcode == RSC)? cmsr.C: 1;
 	                // cmsr.C = (t < (~op1) || t < op2)
 	                cmsr.C = (op1 < op2);
 	                break;
@@ -302,6 +286,21 @@ int condman(cond_t c) {
 
 int decode()
 {
+	#ifdef DEBUG
+	decode_stat();
+	#endif
+	if (D_bubble) {
+		d_reg.insttype = INOP;
+		return 0;
+	}
+
+	
+
+	if (D_reg.insttype == INOP) {
+		d_reg.insttype = INOP;
+		return 0;
+	}
+
 	d_reg.insttype = D_reg.insttype;
 	d_reg.valP = D_reg.valP;
 	d_reg.cond = D_reg.cond;
@@ -310,77 +309,84 @@ int decode()
 	switch(D_reg.insttype) {
 		case D_IMM_SH_INST:
 			{
-				d_reg.op1 = R(D_reg.rn);
-				d_reg.op2 = shifter(D_reg.shifttype, R(D_reg.rm), D_reg.shift_imm);
+				d_reg.op1 = fwdR(D_reg.rn);
+				d_reg.op2 = shifter(D_reg.shifttype, fwdR(D_reg.rm), D_reg.shift_imm);
 				d_reg.dstE = D_reg.rd;
+				d_reg.dstM = -1;
 				break;
 			}
 		case D_REG_SH_INST:
 			{
-				d_reg.op1 = R(D_reg.rn);
-				d_reg.op2 = shifter(D_reg.shifttype, R(D_reg.rm), R(D_reg.rs));
+				d_reg.op1 = fwdR(D_reg.rn);
+				d_reg.op2 = shifter(D_reg.shifttype, fwdR(D_reg.rm), fwdR(D_reg.rs));
 				d_reg.dstE = D_reg.rd;
+				d_reg.dstM = -1;
 				break;
 			}
 		case MUL_INST:
 			{
-				d_reg.op1 = R(D_reg.rn);
-				d_reg.op2 = R(D_reg.rm);
-				d_reg.op3 = D_reg.rs ? R(D_reg.rs) : 0;
+				d_reg.op1 = fwdR(D_reg.rn);
+				d_reg.op2 = fwdR(D_reg.rm);
+				d_reg.op3 = D_reg.rs ? fwdR(D_reg.rs) : 0;
 				d_reg.dstE = D_reg.rd;
+				d_reg.dstM = -1;
 				break;
 			}
 		case BRX_INST:
 			{
 				d_reg.op2 = R(D_reg.rm);
 				d_reg.dstE = 31;
+				d_reg.dstM = -1;
 				break;
 			}
 		case D_IMM_INST:
 			{
-				d_reg.op1 = R(D_reg.rn);
+				d_reg.op1 = fwdR(D_reg.rn);
 				d_reg.op2 = shifter(SHIFT_LP, D_reg.imm9, D_reg.rotate);
 				d_reg.dstE = D_reg.rd;
+				d_reg.dstM = -1;
 				break;
 			}
 		case LSR_OFF_INST:
 			{
-				d_reg.op1 = R(D_reg.rn);
-				d_reg.op2 = shifter(D_reg.shifttype, R(D_reg.rm), D_reg.shift_imm);
-				d_reg.valD = R(D_reg.rd);
+				d_reg.op1 = fwdR(D_reg.rn);
+				d_reg.op2 = shifter(D_reg.shifttype, fwdR(D_reg.rm), D_reg.shift_imm);
+				d_reg.valD = fwdR(D_reg.rd);
 				d_reg.dstE = D_reg.rn;
 				d_reg.dstM = D_reg.rd;
 				break;
 			}
 		case LSHWR_OFF_INST:
 			{
-				d_reg.op1 = R(D_reg.rn);
-				d_reg.op2 = R(D_reg.rm);
-				d_reg.valD = R(D_reg.rd);
+				d_reg.op1 = fwdR(D_reg.rn);
+				d_reg.op2 = fwdR(D_reg.rm);
+				d_reg.valD = fwdR(D_reg.rd);
 				d_reg.dstE = D_reg.rn;
 				d_reg.dstM = D_reg.rd;
 				break;
 			}
 		case LSHWI_OFF_INST:
 			{
-				d_reg.op1 = R(D_reg.rn);
+				d_reg.op1 = fwdR(D_reg.rn);
 				d_reg.op2 = (D_reg.hioff << 5) | (D_reg.lowoff);
-				d_reg.valD = R(D_reg.rd);
+				d_reg.valD = fwdR(D_reg.rd);
 				d_reg.dstE = D_reg.rn;
 				d_reg.dstM = D_reg.rd;
 				break;
 			}
 		case LSI_OFF_INST:
 			{
-				d_reg.op1 = R(D_reg.rn);
+				d_reg.op1 = fwdR(D_reg.rn);
 				d_reg.op2 = D_reg.imm14;
-				d_reg.valD = R(D_reg.rd);
+				d_reg.valD = fwdR(D_reg.rd);
 				d_reg.dstE = D_reg.rn;
 				d_reg.dstM = D_reg.rd;
 				break;
 			}
 		case ST_INST:
 			{
+				d_reg.dstE = -1;
+				d_reg.dstM = -1;
 				break;
 			}
 		case BRLK_INST:
@@ -388,6 +394,7 @@ int decode()
 				d_reg.op1 = extend(D_reg.imm24, 24, 1) << 2;
 				d_reg.op2 = D_reg.valP;
 				d_reg.dstE = 31;
+				d_reg.dstM = -1;
 				break;
 			}
 		case UNKNOWN:
@@ -403,7 +410,7 @@ int decode()
 			d_reg.opcode = MUL;
 			break;
 		case BRX_INST:
-			d_reg.opcode = NOP;
+			d_reg.opcode = INOP;
 			break;
 		case LSR_OFF_INST:
 		case LSI_OFF_INST:
@@ -418,7 +425,7 @@ int decode()
 			d_reg.opcode = ADD;
 			break;
 		case ST_INST:
-			d_reg.opcode = NOP;
+			d_reg.opcode = INOP;
 			break;
 		default:
 			break;
@@ -433,6 +440,14 @@ int decode()
 
 int memory()
 {
+	#ifdef DEBUG
+	memory_stat();
+	#endif
+	if (M_reg.insttype == INOP) {
+		m_reg.insttype = INOP;
+		return 0;
+	}
+
 	switch(M_reg.insttype) {
 		case LSR_OFF_INST:
 		case LSI_OFF_INST:
@@ -503,11 +518,17 @@ int memory()
 
 int writeback()
 {
+	#ifdef DEBUG
+	writeback_stat();
+	#endif
+	if (W_reg.insttype == INOP)
+		return 0;
 	switch (W_reg.insttype) {
 		case D_IMM_SH_INST:
 		case D_REG_SH_INST:
 		case D_IMM_INST:
 			if (!NO_WRITE(W_reg.opcode)) {
+				if (W_reg.dstE == 31) break; 
 				if (W_reg.opcode == MVN || W_reg.opcode == MOV) {
 					if (W_reg.condval) {
 						regs[W_reg.dstE] = W_reg.valE;	
@@ -522,6 +543,7 @@ int writeback()
 			}
 			break;
 		case MUL_INST:
+			if (W_reg.dstE == 31) break; 
 			printf("register #%d is updated to 0x%x\n", W_reg.dstE, W_reg.valE);
 			regs[W_reg.dstE] = W_reg.valE;
 			break;
@@ -541,6 +563,7 @@ int writeback()
 			break;
 		case BRLK_INST:
 			if (W_reg.condval) {
+				if (W_reg.dstE == 31) break; 
 				print_cmsr();
 				regs[W_reg.dstE] = W_reg.valE;
 				#ifdef DEBUG
@@ -560,7 +583,18 @@ int writeback()
 
 int execute()
 {
-	opcode_t opcode = E_reg.opcode;
+	#ifdef DEBUG
+	execute_stat();
+	#endif
+	if (E_bubble) {
+		e_reg.insttype = INOP;
+		return 0;
+	}
+	
+	if (E_reg.insttype == INOP) {
+		e_reg.insttype = INOP;
+		return;
+	}
 	e_reg.valE = alu();
 
 	if (E_reg.insttype == BRLK_INST || E_reg.insttype == D_IMM_SH_INST ||
@@ -579,8 +613,86 @@ int execute()
 
 int clock_tick()
 {
+	printf("cycle %d\n", ncycle);
+	ncycle += 1;
+	
 	D_reg = f_reg;
 	E_reg = d_reg;
 	M_reg = e_reg;
 	W_reg = m_reg;
+	return 0;
+}
+
+static inline LUtrigger()
+{
+	return (MEMINST(E_reg.insttype) && E_reg.L
+		&& (E_reg.dstM == D_reg.rn || E_reg.dstM == D_reg.rd
+			|| E_reg.dstM == D_reg.rm || E_reg.dstM == D_reg.rs));
+}
+
+int gen_pipe_consig()
+{
+	// Fetch stage stall or bubble
+	if (LUtrigger()) {
+		F_stall = 1;
+	} else F_stall = 0;
+
+	// Decode stage stall or bubble
+	if (LUtrigger()) {
+		D_stall = 1;
+	} else D_stall = 0;
+
+	if (// Conditional jump
+		E_reg.insttype == BRLK_INST && e_reg.condval && !D_stall) {
+		D_bubble = 1;
+	} else D_bubble = 0;
+
+	// Execute stage stall or bubble
+	if (// Conditional jump and LU
+		(E_reg.insttype == BRLK_INST && e_reg.condval) || LUtrigger()) {
+		E_bubble = 1;
+	} else E_bubble = 0;
+
+	if (F_stall) {
+		printf("Fetch stall\n");
+	}
+	if (D_stall) {
+		printf("Decode stall\n");
+	}
+	if (D_bubble) {
+		printf("Decode bubble\n");
+	}
+	if (E_bubble) {
+		printf("Execute bubble\n");
+	}
+
+	return 0;
+}
+
+int fwdR(int n)
+{
+	if (n == 31)
+		return R(n);
+	if (n == E_reg.dstE) {
+		printf("regs[%d] forwarded from e_reg.valE with value 0x%x\n", n, e_reg.valE);
+		return e_reg.valE;
+	}
+	if (n == M_reg.dstM) {
+		printf("regs[%d] forwarded from e_reg.valE with value 0x%x\n", n, m_reg.valM);
+		return m_reg.valM;
+	}
+	if (n == M_reg.dstE) {
+		printf("regs[%d] forwarded from e_reg.valE with value 0x%x\n", n, M_reg.valE);
+		return M_reg.valE;
+	}
+	if (n == W_reg.dstM) {
+		printf("regs[%d] forwarded from e_reg.valE with value 0x%x\n", n, W_reg.valM);
+		return W_reg.valM;
+	}
+	if (n == W_reg.dstE) {
+		printf("regs[%d] forwarded from e_reg.valE with value 0x%x\n", n, W_reg.valE);
+		return W_reg.valE;
+	}
+	return R(n);
+
 }
