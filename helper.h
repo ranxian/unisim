@@ -9,6 +9,7 @@
 #define IS_LOG(opcode) (opcode == AND || opcode == XOR || opcode == CAND || opcode == CXOR \
 				|| opcode == ORR || opcode == MOV || opcode == CLB || opcode == MVN)
 #define NO_WRITE(opcode) (opcode == CAND || opcode == CXOR || opcode == CSUB || opcode == CADD)
+#define MEM_INST(inst) (inst == LSR_OFF_INST || inst == LSI_OFF_INST || inst == LSHWR_OFF_INST || inst == LSHWI_OFF_INST)
 #define PC (regs[31])
 #define LR (regs[30])
 #define SP (regs[29])

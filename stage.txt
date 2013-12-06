@@ -47,6 +47,7 @@ Fetch:
 Decode:
 	op2 = rm;
 	dstE = pc_reg_num;
+	dstP = lr_reg_num;
 Execute:
 	valE = op2;
 Memory:
@@ -54,7 +55,7 @@ Memory:
 Write-back:
 	regs[dstE] = valE;
 	if (L)
-		lr = valP & 0xfffffffe;
+		regs[dstP] = valP & 0xfffffffe;
 
 #### LSR_OFF_INST, LSI_OFF_INST:
 
