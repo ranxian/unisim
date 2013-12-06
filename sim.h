@@ -86,8 +86,13 @@ typedef struct {
 	inst_type_t insttype;
 	int dstE;
 	int dstM;
+	int dstP;
 	int valD;
 	int valE;
+	int WM; 	// 是否写内存 (用 valD)
+	int WER;	// 是否用 valE 写寄存器
+	int WMR;	// 是否用 valM 写寄存器
+	int WLR;	// 是否写 LR (用 valP)
 	int S;
 	int S2;
 	int P;
@@ -106,8 +111,13 @@ typedef struct {
 	opcode_t opcode;
 	int dstE;
 	int dstM;
+	int dstP;
 	int valM;
 	int valE;
+	int WM; 	// 是否写内存 (用 valD)
+	int WER;	// 是否用 valE 写寄存器
+	int WMR;	// 是否用 valM 写寄存器
+	int WLR;	// 是否写 LR (用 valP)
 	int S;
 	int S2;
 	int P;

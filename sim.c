@@ -19,7 +19,6 @@ int simulate(int entry)
 	D_reg.insttype = E_reg.insttype = M_reg.insttype = W_reg.insttype = INOP;
 	for (i = 0; ; i++) {
 		inst_cnt += 1;
-		gen_pipe_consig();
 
 		writeback();
 		
@@ -32,6 +31,8 @@ int simulate(int entry)
 		if (!F_stall)
 			fetch();
 		
+		gen_pipe_consig();
+
 		clock_tick();
 		#ifdef DEBUG
 		getchar();
@@ -44,9 +45,14 @@ int simulate(int entry)
 int fetch()
 {
 	// Should have jump
-	if (E_reg.insttype == BRLK_INST && e_reg.condval) {
-		PC = e_reg.valE;
-		printf("PC forward from e_reg.valE with value 0x%x\n", e_reg.valE);
+	if (M_reg.insttype == BRX_INST) {
+		PC = M_reg.valE;
+		printf("PC forward from M_reg.valE with value 0x%x\n", M_reg.valE);
+	}
+
+	if (M_reg.insttype == BRLK_INST && M_reg.condval) {
+		PC = M_reg.valE;
+		printf("PC forward from M_reg.valE with value 0x%x\n", M_reg.valE);
 	}
 		
 	fetch_dword(PC, &ir);
@@ -286,15 +292,14 @@ int condman(cond_t c) {
 
 int decode()
 {
+	
+	if (D_bubble) {
+		D_reg.insttype = INOP;
+	}
+
 	#ifdef DEBUG
 	decode_stat();
 	#endif
-	if (D_bubble) {
-		d_reg.insttype = INOP;
-		return 0;
-	}
-
-	
 
 	if (D_reg.insttype == INOP) {
 		d_reg.insttype = INOP;
@@ -305,6 +310,7 @@ int decode()
 	d_reg.valP = D_reg.valP;
 	d_reg.cond = D_reg.cond;
 	d_reg.S2 = D_reg.S2;
+	d_reg.dstP = d_reg.dstE = d_reg.dstM = -1;
 	COPY_SBIT(d_reg, D_reg);
 	switch(D_reg.insttype) {
 		case D_IMM_SH_INST:
@@ -312,7 +318,6 @@ int decode()
 				d_reg.op1 = fwdR(D_reg.rn);
 				d_reg.op2 = shifter(D_reg.shifttype, fwdR(D_reg.rm), D_reg.shift_imm);
 				d_reg.dstE = D_reg.rd;
-				d_reg.dstM = -1;
 				break;
 			}
 		case D_REG_SH_INST:
@@ -320,7 +325,6 @@ int decode()
 				d_reg.op1 = fwdR(D_reg.rn);
 				d_reg.op2 = shifter(D_reg.shifttype, fwdR(D_reg.rm), fwdR(D_reg.rs));
 				d_reg.dstE = D_reg.rd;
-				d_reg.dstM = -1;
 				break;
 			}
 		case MUL_INST:
@@ -329,7 +333,6 @@ int decode()
 				d_reg.op2 = fwdR(D_reg.rm);
 				d_reg.op3 = D_reg.rs ? fwdR(D_reg.rs) : 0;
 				d_reg.dstE = D_reg.rd;
-				d_reg.dstM = -1;
 				break;
 			}
 		case BRX_INST:
@@ -337,6 +340,8 @@ int decode()
 				d_reg.op2 = R(D_reg.rm);
 				d_reg.dstE = 31;
 				d_reg.dstM = -1;
+				if (D_reg.L)
+					d_reg.dstP = 30;
 				break;
 			}
 		case D_IMM_INST:
@@ -344,7 +349,6 @@ int decode()
 				d_reg.op1 = fwdR(D_reg.rn);
 				d_reg.op2 = shifter(SHIFT_LP, D_reg.imm9, D_reg.rotate);
 				d_reg.dstE = D_reg.rd;
-				d_reg.dstM = -1;
 				break;
 			}
 		case LSR_OFF_INST:
@@ -385,8 +389,6 @@ int decode()
 			}
 		case ST_INST:
 			{
-				d_reg.dstE = -1;
-				d_reg.dstM = -1;
 				break;
 			}
 		case BRLK_INST:
@@ -394,7 +396,7 @@ int decode()
 				d_reg.op1 = extend(D_reg.imm24, 24, 1) << 2;
 				d_reg.op2 = D_reg.valP;
 				d_reg.dstE = 31;
-				d_reg.dstM = -1;
+				d_reg.dstP = 30;
 				break;
 			}
 		case UNKNOWN:
@@ -550,7 +552,7 @@ int writeback()
 		case BRX_INST:
 			regs[W_reg.dstE] = W_reg.valE;
 			if (W_reg.L)
-				LR = W_reg.valP & 0xfffffffe;
+				regs[W_reg.dstP] = W_reg.valP & 0xfffffffe;
 			break;
 		case LSR_OFF_INST:
 		case LSI_OFF_INST:
@@ -570,6 +572,9 @@ int writeback()
 				printf("register #%d is updated to 0x%x\n", W_reg.dstE, W_reg.valE);
 				#endif
 				if (W_reg.L) LR = W_reg.valP;
+				#ifdef DEBUG
+				printf("LR is updated to 0x%x\n", W_reg.valP);
+				#endif
 			}
 			break;
 		case ST_INST:
@@ -583,13 +588,13 @@ int writeback()
 
 int execute()
 {
+	if (E_bubble) {
+		E_reg.insttype = INOP;
+	}
+
 	#ifdef DEBUG
 	execute_stat();
 	#endif
-	if (E_bubble) {
-		e_reg.insttype = INOP;
-		return 0;
-	}
 	
 	if (E_reg.insttype == INOP) {
 		e_reg.insttype = INOP;
@@ -616,10 +621,12 @@ int clock_tick()
 	printf("cycle %d\n", ncycle);
 	ncycle += 1;
 	
-	D_reg = f_reg;
+	if (!D_stall)
+		D_reg = f_reg;
 	E_reg = d_reg;
 	M_reg = e_reg;
 	W_reg = m_reg;
+
 	return 0;
 }
 
@@ -643,13 +650,13 @@ int gen_pipe_consig()
 	} else D_stall = 0;
 
 	if (// Conditional jump
-		E_reg.insttype == BRLK_INST && e_reg.condval && !D_stall) {
+		((E_reg.insttype == BRLK_INST && e_reg.condval) || E_reg.insttype == BRX_INST) && !D_stall) {
 		D_bubble = 1;
 	} else D_bubble = 0;
 
 	// Execute stage stall or bubble
 	if (// Conditional jump and LU
-		(E_reg.insttype == BRLK_INST && e_reg.condval) || LUtrigger()) {
+		(E_reg.insttype == BRLK_INST && e_reg.condval) || E_reg.insttype == BRX_INST || LUtrigger()) {
 		E_bubble = 1;
 	} else E_bubble = 0;
 
