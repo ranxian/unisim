@@ -237,8 +237,6 @@ int alu()
 		        case CSUB:
 		        {
 	                cmsr.V = ((((op1^op2)>>31) != 0) && (((tmp_result^op2)>>31) == 0));
-	                unsigned t = tmp_result;
-	                t -= (opcode == SBC)? cmsr.C: 1;
 	                cmsr.C = (op1 >= op2);
 	                // cmsr.C = (t < op1 || t < (~op2));
 	                break;
@@ -247,8 +245,6 @@ int alu()
 		        case RSC:
 		        {
 	                cmsr.V = ((((op1^op2)>>31) != 0) && (((tmp_result^op1)>>31) == 0));
-	                unsigned t = tmp_result;
-	                t -= (opcode == RSC)? cmsr.C: 1;
 	                // cmsr.C = (t < (~op1) || t < op2)
 	                cmsr.C = (op1 < op2);
 	                break;
@@ -560,7 +556,6 @@ int writeback()
 
 int execute()
 {
-	opcode_t opcode = E_reg.opcode;
 	e_reg.valE = alu();
 
 	if (E_reg.insttype == BRLK_INST || E_reg.insttype == D_IMM_SH_INST ||
@@ -574,6 +569,8 @@ int execute()
 	e_reg.dstM = E_reg.dstM;
 	e_reg.valD = E_reg.valD;
 	e_reg.opcode = E_reg.opcode;
+
+
 	COPY_SBIT(e_reg, E_reg);
 }
 
