@@ -641,23 +641,23 @@ int fwdR(int n)
 {
 	if (n == 31)
 		return R(n);
-	if (n == E_reg.dstE) {
+	if (n == E_reg.dstE && e_reg.WER) {
 		printf("regs[%d] forwarded from e_reg.valE with value 0x%x\n", n, e_reg.valE);
 		return e_reg.valE;
 	}
-	if (n == M_reg.dstM) {
+	if (n == M_reg.dstM && M_reg.WMR) {
 		printf("regs[%d] forwarded from e_reg.valE with value 0x%x\n", n, m_reg.valM);
 		return m_reg.valM;
 	}
-	if (n == M_reg.dstE) {
+	if (n == M_reg.dstE && M_reg.WER) {
 		printf("regs[%d] forwarded from e_reg.valE with value 0x%x\n", n, M_reg.valE);
 		return M_reg.valE;
 	}
-	if (n == W_reg.dstM) {
+	if (n == W_reg.dstM && W_reg.WMR) {
 		printf("regs[%d] forwarded from e_reg.valE with value 0x%x\n", n, W_reg.valM);
 		return W_reg.valM;
 	}
-	if (n == W_reg.dstE) {
+	if (n == W_reg.dstE && W_reg.WER) {
 		printf("regs[%d] forwarded from e_reg.valE with value 0x%x\n", n, W_reg.valE);
 		return W_reg.valE;
 	}
