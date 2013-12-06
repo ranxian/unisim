@@ -404,7 +404,7 @@ int decode()
 			d_reg.opcode = MUL;
 			break;
 		case BRX_INST:
-			d_reg.opcode = INOP;
+			d_reg.opcode = NOP;
 			break;
 		case LSR_OFF_INST:
 		case LSI_OFF_INST:
@@ -564,7 +564,7 @@ int execute()
 			printf("Execute unknown inst\n");
 			break;
 	}
-
+	printf("e_reg.valE=0x%x\n", e_reg.valE);
 	COPY_SBIT(e_reg, E_reg);
 }
 
