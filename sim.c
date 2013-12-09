@@ -35,7 +35,7 @@ int simulate(int entry)
 
 		clock_tick();
 		#ifdef DEBUG
-		getchar();
+		// getchar();
 		#endif
 	}
 	printf("%d inst executed\n", inst_cnt);
@@ -332,7 +332,7 @@ int decode()
 			}
 		case BRX_INST:
 			{
-				d_reg.op2 = R(D_reg.rm);
+				d_reg.op2 = fwdR(D_reg.rm);
 				d_reg.dstE = 31;
 				d_reg.dstM = -1;
 				break;
