@@ -8,37 +8,42 @@
 #include "extender.h"
 
 int ncycle = 0;
+int halted = 0;
+int inst_cnt = 0;
 int simulate(int entry)
 {
 	int i;
+	int c = 0;
 
 	PC = entry;
 	SP = alloc_stack();
 
-	int inst_cnt = 0;
 	D_reg.insttype = E_reg.insttype = M_reg.insttype = W_reg.insttype = INOP;
 	for (i = 0; ; i++) {
-		inst_cnt += 1;
 
 		writeback();
-		
+
 		memory();
-		
+
 		execute();
-		
+
 		decode();
-		
+
 		if (!F_stall)
 			fetch();
-		
+
 		gen_pipe_consig();
 
 		clock_tick();
+		if (halted)
+			c++;
+		if (c == 2) break;
 		#ifdef DEBUG
 		// getchar();
 		#endif
 	}
 	printf("%d inst executed\n", inst_cnt);
+	printf("%lf\n", (double)ncycle / inst_cnt);
 	return 0;
 }
 
@@ -46,15 +51,18 @@ int fetch()
 {
 	if (M_reg.dstE == 31 && M_reg.WER)  {
 		PC = M_reg.valE;
+		#ifdef DEBUG	
 		printf("PC forward from M_reg.valE with value 0x%x\n", M_reg.valE);
+		#endif
 	}
 
 	if (M_reg.dstM == 31 && M_reg.WMR)  {
 		PC = m_reg.valM;
+		#ifdef DEBUG	
 		printf("PC forward from M_reg.valM with value 0x%x\n", m_reg.valM);
+		#endif
 	}
 
-		
 	fetch_dword(PC, &ir);
 	#ifdef DEBUG
 		printf("FETCH STAGE:\n");
@@ -139,6 +147,9 @@ int fetch()
 
 	if (f_reg.insttype == ST_INST) {
 		regs[0] = syscall(f_reg.imm24);
+		#ifdef DEBUG
+		printf("%d\n", halted);
+		#endif
 	}
 
 	return 1;
@@ -200,7 +211,6 @@ int alu()
 			tmp_result = ~op2;
 			break;
 		case MUL:
-			printf("mul: %d*%d\n", op1, op2);
 			tmp_result = op1 * op2 + op3;
 			break;
 		case NOP:
@@ -288,7 +298,7 @@ int condman(cond_t c) {
 
 int decode()
 {
-	
+
 	if (D_bubble) {
 		D_reg.insttype = INOP;
 	}
@@ -444,10 +454,10 @@ int memory()
 	if (M_reg.insttype == LSHWI_OFF_INST || M_reg.insttype == LSHWR_OFF_INST)
 		if (M_reg.H) { H = 1; fetchsize = 2; }
 
-	
+
 	if (MEM_INST(M_reg.insttype)) {
 		int addr;
-		addr = M_reg.P ? M_reg.valE : R(M_reg.dstE);	
+		addr = M_reg.P ? M_reg.valE : R(M_reg.dstE);
 		if (!M_reg.WM) {
 			fetch_nbyte(addr, &m_reg.valM, fetchsize);
 		} else {
@@ -483,7 +493,9 @@ int writeback()
 	if (W_reg.WER && W_reg.dstE != 31) regs[W_reg.dstE] = W_reg.valE;
 	if (W_reg.WMR && W_reg.dstM != 31) regs[W_reg.dstM] = W_reg.valM;
 	if (W_reg.WLR) regs[30] = W_reg.valP;
-
+	
+	if (W_reg.insttype != INOP)
+		inst_cnt += 1;
 	return 0;
 }
 
@@ -496,7 +508,7 @@ int execute()
 	#ifdef DEBUG
 	execute_stat();
 	#endif
-	
+
 	if (E_reg.insttype == INOP) {
 		e_reg.insttype = INOP;
 		e_reg.WMR = e_reg.WER = e_reg.WLR = e_reg.WM = 0;
@@ -523,13 +535,13 @@ int execute()
 		case D_IMM_SH_INST:
 			e_reg.WER = 1;
 			// Conditional mov with condition failed
-			if ((E_reg.opcode == MVN || E_reg.opcode == MOV) 
+			if ((E_reg.opcode == MVN || E_reg.opcode == MOV)
 				&& !e_reg.condval)
 			{
 				e_reg.WER = 0;
 			}
 			// Not write op
-			if (NO_WRITE(E_reg.opcode)) 
+			if (NO_WRITE(E_reg.opcode))
 				e_reg.WER = 0;
 			break;
 		case MUL_INST:
@@ -564,15 +576,16 @@ int execute()
 			printf("Execute unknown inst\n");
 			break;
 	}
-	printf("e_reg.valE=0x%x\n", e_reg.valE);
 	COPY_SBIT(e_reg, E_reg);
 }
 
 int clock_tick()
 {
+	#ifdef DEBUG
 	printf("cycle %d\n", ncycle);
+	#endif
 	ncycle += 1;
-	
+
 	if (!D_stall)
 		D_reg = f_reg;
 	E_reg = d_reg;
@@ -582,18 +595,21 @@ int clock_tick()
 	return 0;
 }
 
-static inline LUtrigger()
+static inline int LUtrigger()
 {
 	return (MEMINST(E_reg.insttype) && e_reg.WMR
 		&& (E_reg.dstM == D_reg.rn || E_reg.dstM == D_reg.rd
 			|| E_reg.dstM == D_reg.rm || E_reg.dstM == D_reg.rs));
 }
 
-static inline PCChange()
+static inline int PCChange()
 {
 	if ((E_reg.dstE == 31 && e_reg.WER) ||
-			(E_reg.dstM == 31 && e_reg.WMR)) { 
+			(E_reg.dstM == 31 && e_reg.WMR) ||
+			(E_reg.dstM == 31 && e_reg.WLR)) {
+		#ifdef DEBUG
 		printf("PCChanging\n");
+		#endif
 		return 1;
 	} else return 0;
 }
@@ -622,16 +638,24 @@ int gen_pipe_consig()
 	} else E_bubble = 0;
 
 	if (F_stall) {
+		#ifdef DEBUG	
 		printf("Fetch stall\n");
+		#endif
 	}
 	if (D_stall) {
+		#ifdef DEBUG	
 		printf("Decode stall\n");
+		#endif
 	}
 	if (D_bubble) {
+		#ifdef DEBUG	
 		printf("Decode bubble\n");
+		#endif
 	}
 	if (E_bubble) {
+		#ifdef DEBUG	
 		printf("Execute bubble\n");
+		#endif
 	}
 
 	return 0;
@@ -640,27 +664,51 @@ int gen_pipe_consig()
 int fwdR(int n)
 {
 	if (n == 31)
-		return R(n);
+		return D_reg.valP;
 	if (n == E_reg.dstE && e_reg.WER) {
+		#ifdef DEBUG
 		printf("regs[%d] forwarded from e_reg.valE with value 0x%x\n", n, e_reg.valE);
+		#endif
 		return e_reg.valE;
 	}
+	if (n == 30 && e_reg.WLR) {
+		return e_reg.valP;
+	}
+
 	if (n == M_reg.dstM && M_reg.WMR) {
+		#ifdef DEBUG
 		printf("regs[%d] forwarded from e_reg.valE with value 0x%x\n", n, m_reg.valM);
+		#endif
 		return m_reg.valM;
 	}
 	if (n == M_reg.dstE && M_reg.WER) {
+		#ifdef DEBUG
 		printf("regs[%d] forwarded from e_reg.valE with value 0x%x\n", n, M_reg.valE);
+		#endif
 		return M_reg.valE;
 	}
+
+	if (n == 30 && M_reg.WLR) {
+		return M_reg.valP;
+	}
+
 	if (n == W_reg.dstM && W_reg.WMR) {
+		#ifdef DEBUG
 		printf("regs[%d] forwarded from e_reg.valE with value 0x%x\n", n, W_reg.valM);
+		#endif
 		return W_reg.valM;
 	}
 	if (n == W_reg.dstE && W_reg.WER) {
+		#ifdef DEBUG
 		printf("regs[%d] forwarded from e_reg.valE with value 0x%x\n", n, W_reg.valE);
+		#endif
 		return W_reg.valE;
 	}
+
+	if (n == 30 && M_reg.WLR) {
+		return W_reg.valP;
+	}
+
 	return R(n);
 
 }

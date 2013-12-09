@@ -1,3 +1,6 @@
 #! /bin/sh
-
-make && ./unisim $1
+fullname=$(basename $1)
+filename=${fullname%.*}
+make
+./unigcc.sh $fullname 
+./unisim $filename

@@ -10,10 +10,16 @@
     }
 #endif
 
+#define MAXN 100
+#define MUL 214013
+#define ADD 2531011
+int seed = 234;
+
+
 void print(int *array)
 {
     int i;
-    for (i = 0; i < 10; i++) {
+    for (i = 0; i < MAXN; i++) {
         sys_putint(array[i]);
     }
 }
@@ -48,8 +54,7 @@ int partition(int array[],int left, int right)
 void quicksort(int array[], int left, int right)
 {
     //Do nothing if left <= right
-    print(array);
-    sys_putint(111111111);
+    // print(array);
     if(left<right)
     {
         int pivot=partition(array,left,right);
@@ -61,7 +66,14 @@ void quicksort(int array[], int left, int right)
 
 int main()
 {
-    int array[] = { 3, 1, 2, 5, 7, 9, 10, 4, 2, 3, -1 };
-    quicksort(array, 0, 10);
+    int array[MAXN];
+    int i;
+    for (i = 0; i < MAXN; i++) {
+        seed = seed * MUL + ADD;
+        array[i] = seed;
+    }
+    // print(array);
+    quicksort(array, 0, MAXN);
     print(array);
+    return 0;
 }

@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-int syscall(int callnum, int *res)
+int syscall(int callnum)
 {
 	switch (callnum) {
 		case SYS_putint:
@@ -12,7 +12,8 @@ int syscall(int callnum, int *res)
 			break;
 		case SYS_exit:
 			printf("SYS_exit: retval = %d\n", R(0));
-			exit(0);
+			halted = 1;
+			// exit(0);
 			break;
 		case SYS_udiv:
 			return (uint32_t)R(0) / (uint32_t)R(1);

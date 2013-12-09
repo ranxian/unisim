@@ -1,18 +1,16 @@
 #include "testheader.h"
-#define MAX 10
+#define MAX 100000
 unsigned primes[MAX], n = 3;
 int add_prime(unsigned num){
         int i;
         for (i = 2; i < MAX; ++i){
                 if (primes[i] * primes[i] > num){
-                        sys_putint(7123876);
-                        sys_putint(primes[i]);
-                        sys_putint(num);
                         primes[n++] = num;
                         return 1;
                 }
-                if (num % primes[i] == 0)
-                        break;
+                if (num % primes[i] == 0) {
+                    break;
+                }
         }
         return 0;
 }
@@ -28,7 +26,10 @@ int main()
                     if (add_prime(i + 1) + add_prime(i + 5)) break;
             }
     }
-    for (i = 0; i < n; i++)
+
+
+    for (i = 0; i < n; i++) {
         sys_putint(primes[i]);
+    }
     return 0;
 }

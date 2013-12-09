@@ -25,4 +25,7 @@
 #define SYS_putint      0x9000f4
 #define SYS_putuint     0x9000f5
 #define SYS_prints		0x9000f6
+
+extern int halted;
+int syscall(int callnum);
 #endif
