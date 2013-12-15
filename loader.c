@@ -8,13 +8,13 @@
 
 int load_shdrs(FILE *file, Elf32_Ehdr *ehdr, Elf32_Shdr *shdrs)
 {
-	int i, j;
-	char buf[1024];
+	int i;
 	fseek(file, ehdr->e_shoff, 0);
 	for (i = 0; i < ehdr->e_shnum; i++)
 	{
 		fread(shdrs + i, 1, sizeof(Elf32_Shdr), file);
 	}
+	return 0;
 }
 
 int load_strtab(FILE *file, Elf32_Shdr *shdr, char *buf)
@@ -53,7 +53,7 @@ void ehdr_stats(Elf32_Ehdr *hdrp)
 
 int load_psegs(FILE *file, Elf32_Ehdr *ehdr, Elf32_Phdr *phdrs)
 {
-	int i, cseg_loaded = 0;
+	int i;
 	int word;
 
 	for (i = 0; i < ehdr->e_phnum; i++)
@@ -71,11 +71,11 @@ int load_psegs(FILE *file, Elf32_Ehdr *ehdr, Elf32_Phdr *phdrs)
 			segment_cnt++;
 		}
 	}
+	return 0;
 }
 int load_phdrs(FILE *file, Elf32_Ehdr *ehdr, Elf32_Phdr *phdrs)
 {
 	int i;
-	int cseg_loaded = 0;
 	fseek(file, ehdr->e_phoff, 0);
 
 	for (i = 0; i < ehdr->e_phnum; i++)

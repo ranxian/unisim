@@ -31,7 +31,7 @@ extender.o: extender.c extender.h
 	$(CC) $(CFLAGS) -c extender.c
 
 test_sim: sim.o test_sim.c
-	$(CC) $(CFLAGS) -o test_sim test_sim.c sim.h
+	$(CC) $(CFLAGS) -o test_sim test_sim.c 
 
 syscall.o: syscall.c syscall.h
 	$(CC) $(CFLAGS) -c syscall.c

@@ -25,5 +25,7 @@ int syscall(int callnum)
             return (uint32_t)R(0) % (uint32_t)R(1);
 		default:
 			printf("unimplemented syscall\n");
+			return -1;
 	}
+	return 0;
 }

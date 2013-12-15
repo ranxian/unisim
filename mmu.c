@@ -54,7 +54,7 @@ int alloc_cs()
 {
 	segment_t *cs = &segments[segment_cnt];
 	segment_cnt ++;
-	
+
 	cs->offset = CS_START;
 	cs->size = CS_SIZE;
 	cs->content = malloc(CS_SIZE);

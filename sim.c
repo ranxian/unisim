@@ -6,6 +6,7 @@
 #include "shifter.h"
 #include "mmu.h"
 #include "extender.h"
+#include "syscall.h"
 
 int ncycle = 0;
 int halted = 0;
@@ -51,14 +52,14 @@ int fetch()
 {
 	if (M_reg.dstE == 31 && M_reg.WER)  {
 		PC = M_reg.valE;
-		#ifdef DEBUG	
+		#ifdef DEBUG
 		printf("PC forward from M_reg.valE with value 0x%x\n", M_reg.valE);
 		#endif
 	}
 
 	if (M_reg.dstM == 31 && M_reg.WMR)  {
 		PC = m_reg.valM;
-		#ifdef DEBUG	
+		#ifdef DEBUG
 		printf("PC forward from M_reg.valM with value 0x%x\n", m_reg.valM);
 		#endif
 	}
@@ -429,7 +430,7 @@ int decode()
 			d_reg.opcode = ADD;
 			break;
 		case ST_INST:
-			d_reg.opcode = INOP;
+			d_reg.opcode = NOP;
 			break;
 		default:
 			break;
@@ -483,6 +484,8 @@ int memory()
 	m_reg.WER = M_reg.WER;
 	m_reg.WLR = M_reg.WLR;
 	m_reg.WMR = M_reg.WMR;
+
+	return 0;
 }
 
 int writeback()
@@ -493,7 +496,7 @@ int writeback()
 	if (W_reg.WER && W_reg.dstE != 31) regs[W_reg.dstE] = W_reg.valE;
 	if (W_reg.WMR && W_reg.dstM != 31) regs[W_reg.dstM] = W_reg.valM;
 	if (W_reg.WLR) regs[30] = W_reg.valP;
-	
+
 	if (W_reg.insttype != INOP)
 		inst_cnt += 1;
 	return 0;
@@ -512,7 +515,7 @@ int execute()
 	if (E_reg.insttype == INOP) {
 		e_reg.insttype = INOP;
 		e_reg.WMR = e_reg.WER = e_reg.WLR = e_reg.WM = 0;
-		return;
+		return 0;
 	}
 
 	e_reg.valE = alu();
@@ -577,6 +580,7 @@ int execute()
 			break;
 	}
 	COPY_SBIT(e_reg, E_reg);
+	return 0;
 }
 
 int clock_tick()
@@ -638,22 +642,22 @@ int gen_pipe_consig()
 	} else E_bubble = 0;
 
 	if (F_stall) {
-		#ifdef DEBUG	
+		#ifdef DEBUG
 		printf("Fetch stall\n");
 		#endif
 	}
 	if (D_stall) {
-		#ifdef DEBUG	
+		#ifdef DEBUG
 		printf("Decode stall\n");
 		#endif
 	}
 	if (D_bubble) {
-		#ifdef DEBUG	
+		#ifdef DEBUG
 		printf("Decode bubble\n");
 		#endif
 	}
 	if (E_bubble) {
-		#ifdef DEBUG	
+		#ifdef DEBUG
 		printf("Execute bubble\n");
 		#endif
 	}
