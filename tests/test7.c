@@ -1,14 +1,5 @@
 // qsort test
-#ifndef X86
-#include "stdlib.h"
-#endif
-
-#ifdef X86
-    #include <stdio.h>
-    void sys_putint(int i) {
-        printf("%d\n", i);
-    }
-#endif
+#include "testheader.h"
 
 #define MAXN 100
 #define MUL 214013

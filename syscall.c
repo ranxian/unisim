@@ -23,6 +23,9 @@ int syscall(int callnum)
             return (int)R(0) % (int)R(1);
         case SYS_umod:
             return (uint32_t)R(0) % (uint32_t)R(1);
+        case SYS_state:
+        	printf("inst: %d, cycle: %d\n", inst_cnt, ncycle);
+        	return 0;
 		default:
 			printf("unimplemented syscall\n");
 			return -1;

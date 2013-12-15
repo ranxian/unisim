@@ -1,7 +1,7 @@
 #ifndef TESTHEADER_H
 #define TESTHEADER_H
 #ifndef X86
-#include "stdlib.h"
+#include "../stdlib.h"
 #include <stdint.h>
 #endif
 

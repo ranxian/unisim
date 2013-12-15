@@ -87,7 +87,7 @@ void execute_stat()
 	printf("opcode:\t\t%s\n", OPCODE_NAME(E_reg.opcode));
 	printf("dstE:\t\t%d\n", E_reg.dstE);
 	printf("dstM:\t\t%d\n", E_reg.dstM);
-	printf("valD:\t\t%d\n", E_reg.valD);
+	printf("valD:\t\t0x%x\n", E_reg.valD);
 	printf("op1:\t\t0x%x\n", E_reg.op1);
 	printf("op2:\t\t0x%x\n", E_reg.op2);
 	printf("C:\t\t%d\n", E_reg.C);
@@ -112,7 +112,7 @@ void memory_stat()
 	printf("opcode:\t\t%s\n", OPCODE_NAME(M_reg.opcode));
 	printf("dstE:\t\t%d\n", M_reg.dstE);
 	printf("dstM:\t\t%d\n", M_reg.dstM);
-	printf("valD:\t\t%d\n", M_reg.valD);
+	printf("valD:\t\t0x%x\n", M_reg.valD);
 	printf("valE:\t\t0x%x\n", M_reg.valE);
 	printf("S:\t\t%d\n", M_reg.S);
 	printf("S2:\t\t%d\n", M_reg.S2);

@@ -461,7 +461,13 @@ int memory()
 		addr = M_reg.P ? M_reg.valE : R(M_reg.dstE);
 		if (!M_reg.WM) {
 			fetch_nbyte(addr, &m_reg.valM, fetchsize);
+			#ifdef DEBUG
+			printf("fetch from address 0x%x with value 0x%x\n", addr, m_reg.valM);
+			#endif
 		} else {
+			#ifdef DEBUG
+			printf("wirte to address 0x%x with value 0x%x\n", addr, M_reg.valD);
+			#endif
 			if (B) {
 				write_byte(addr, M_reg.valD & 0xff);
 			} else if (H) {
@@ -595,6 +601,7 @@ int clock_tick()
 	E_reg = d_reg;
 	M_reg = e_reg;
 	W_reg = m_reg;
+
 
 	return 0;
 }
