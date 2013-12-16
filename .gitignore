@@ -4,3 +4,10 @@ unisim
 test_sim
 cscope.out
 *.S
+tests/bubblesort/*
+tests/quicksort/*
+tests/insertsort/*
+tests/selectsort/*
+tests/mergesort*
+tests/heapsort/*
+tests/shellsort/*

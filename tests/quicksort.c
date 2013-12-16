@@ -1,6 +1,5 @@
 // qsort test
 #include "testheader.h"
-#define MAXN 1
 #define MUL 214013
 #define ADD 2531011
 int seed = 234;
@@ -62,8 +61,7 @@ int main()
         seed = seed * MUL + ADD;
         array[i] = seed;
     }
-    quicksort(array, 0, MAXN);
-    sys_exit(0);
+    quicksort(array, 0, MAXN-1);
     // print(array);
     return 0;
 }
