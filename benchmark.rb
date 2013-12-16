@@ -2,7 +2,7 @@ exe = './unisim'
 testdir = './tests'
 testexes = ['quicksort', 'mergesort', 'bubblesort', 'selectsort', 'heapsort', 'insertsort']
 testscale = [10, 100, 1000, 10000, 100000]#, 100000, 1000000]
-otags = ['-O1', '-O2']
+otags = ['-O1', '-O2', '-O3']
 
 target = ARGV.shift
 
@@ -12,7 +12,7 @@ testexes.each do |testexe|
     `mkdir results/#{testexe}`
   end
 	testscale.each do |scale|
-    if (['bubblesort', 'selectsort', 'insertsort'].include? (testexe)) && scale >= 10000
+    if ['bubblesort', 'selectsort', 'insertsort'].include?(testexe) && scale >= 10000
       next
     end
 		otags.each do |otag|

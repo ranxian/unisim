@@ -11,3 +11,4 @@ tests/selectsort/*
 tests/mergesort*
 tests/heapsort/*
 tests/shellsort/*
+results/*
