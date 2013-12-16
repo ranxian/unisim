@@ -11,6 +11,10 @@
 int ncycle = 0;
 int halted = 0;
 int inst_cnt = 0;
+int nforward;
+int nstall;
+int nbubble;
+int misspred;
 int simulate(int entry)
 {
 	int i;
@@ -30,8 +34,10 @@ int simulate(int entry)
 
 		decode();
 
-		if (!F_stall)
+		if (!F_stall) {
 			fetch();
+			nstall++;
+		}
 
 		gen_pipe_consig();
 
@@ -52,6 +58,7 @@ int fetch()
 {
 	if (M_reg.dstE == 31 && M_reg.WER)  {
 		PC = M_reg.valE;
+		nforward++;
 		#ifdef DEBUG
 		printf("PC forward from M_reg.valE with value 0x%x\n", M_reg.valE);
 		#endif
@@ -59,6 +66,7 @@ int fetch()
 
 	if (M_reg.dstM == 31 && M_reg.WMR)  {
 		PC = m_reg.valM;
+		nforward++;
 		#ifdef DEBUG
 		printf("PC forward from M_reg.valM with value 0x%x\n", m_reg.valM);
 		#endif
@@ -302,6 +310,7 @@ int decode()
 
 	if (D_bubble) {
 		D_reg.insttype = INOP;
+		nbubble++;
 	}
 
 	#ifdef DEBUG
@@ -512,6 +521,7 @@ int execute()
 {
 	if (E_bubble) {
 		E_reg.insttype = INOP;
+		nbubble++;
 	}
 
 	#ifdef DEBUG
@@ -596,8 +606,10 @@ int clock_tick()
 	#endif
 	ncycle += 1;
 
-	if (!D_stall)
+	if (!D_stall) {
 		D_reg = f_reg;
+		nstall++;
+	}
 	E_reg = d_reg;
 	M_reg = e_reg;
 	W_reg = m_reg;
@@ -618,6 +630,7 @@ static inline int PCChange()
 	if ((E_reg.dstE == 31 && e_reg.WER) ||
 			(E_reg.dstM == 31 && e_reg.WMR) ||
 			(E_reg.dstM == 31 && e_reg.WLR)) {
+		misspred++;
 		#ifdef DEBUG
 		printf("PCChanging\n");
 		#endif
@@ -676,6 +689,7 @@ int fwdR(int n)
 {
 	if (n == 31)
 		return D_reg.valP;
+	nforward++;
 	if (n == E_reg.dstE && e_reg.WER) {
 		#ifdef DEBUG
 		printf("regs[%d] forwarded from e_reg.valE with value 0x%x\n", n, e_reg.valE);
@@ -719,6 +733,7 @@ int fwdR(int n)
 	if (n == 30 && M_reg.WLR) {
 		return W_reg.valP;
 	}
+	nforward--;
 
 	return R(n);
 

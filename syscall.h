@@ -30,5 +30,9 @@
 extern int halted;
 extern int inst_cnt;
 extern int ncycle;
+extern int nforward;
+extern int misspred;
+extern int nstall;
+extern int nbubble;
 int syscall(int callnum);
 #endif
