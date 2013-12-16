@@ -44,7 +44,7 @@ int partition(int array[],int left, int right)
 void quicksort(int array[], int left, int right)
 {
     //Do nothing if left <= right
-    // print(array);
+    print(array);
     if(left<right)
     {
         int pivot=partition(array,left,right);
@@ -63,7 +63,7 @@ int main()
         array[i] = seed;
     }
     quicksort(array, 0, MAXN);
-    sys_exit(0);
-    // print(array);
+    print(array);
+
     return 0;
 }
