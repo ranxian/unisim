@@ -11,20 +11,23 @@
 int ncycle = 0;
 int halted = 0;
 int inst_cnt = 0;
-int nforward;
-int nstall;
-int nbubble;
-int misspred;
+int nforward = 0;
+int nstall = 0;
+int nbubble = 0;
+int misspred = 0;
+
 int simulate(int entry)
 {
 	int i;
 	int c = 0;
 
+	// init pc
 	PC = entry;
+	// allocate stack
 	SP = alloc_stack();
-
+	// init empty pipeline
 	D_reg.insttype = E_reg.insttype = M_reg.insttype = W_reg.insttype = INOP;
-	for (i = 0; ; i++) {
+	while (1) {
 
 		writeback();
 
@@ -46,7 +49,7 @@ int simulate(int entry)
 			c++;
 		if (c == 2) break;
 		#ifdef DEBUG
-		// getchar();
+		getchar();
 		#endif
 	}
 	printf("%d inst executed\n", inst_cnt);
@@ -91,6 +94,7 @@ int fetch()
 	f_reg.opcode = f25_28;
 	f_reg.rn = f19_23;
 	f_reg.rd = f14_18;
+	f_reg.rs = f9_13;
 	f_reg.shift_imm = f9_13;
 	f_reg.shifttype = bits(ii, 6, 7);
 	f_reg.rm = bits(ii, 0, 4);
@@ -347,7 +351,7 @@ int decode()
 			{
 				d_reg.op1 = fwdR(D_reg.rn);
 				d_reg.op2 = fwdR(D_reg.rm);
-				d_reg.op3 = D_reg.rs ? fwdR(D_reg.rs) : 0;
+				d_reg.op3 = D_reg.A ? fwdR(D_reg.rs) : 0;
 				d_reg.dstE = D_reg.rd;
 				break;
 			}

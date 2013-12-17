@@ -1,9 +1,8 @@
 #include "testheader.h"
-#define MAX 100000
-unsigned primes[MAX], n = 3;
+unsigned primes[MAXN], n = 3;
 int add_prime(unsigned num){
         int i;
-        for (i = 2; i < MAX; ++i){
+        for (i = 2; i < MAXN; ++i){
                 if (primes[i] * primes[i] > num){
                         primes[n++] = num;
                         return 1;
@@ -20,7 +19,7 @@ int main()
     primes[0] = 2;
     primes[1] = 3;
     primes[2] = 5;
-    while (n < MAX){
+    while (n < MAXN){
             while (1){
                     i += 6;
                     if (add_prime(i + 1) + add_prime(i + 5)) break;

@@ -3,10 +3,6 @@
 #define MUL 214013
 #define ADD 2531011
 int seed = 234;
-#ifndef MAXN
-#define MAXN 10
-#endif
-
 void print(int *array)
 {
     int i;
@@ -66,6 +62,6 @@ int main()
 	sys_state(0);
     quicksort(array, 0, MAXN-1);
 	sys_state(0);
-    // print(array);
+    print(array);
     return 0;
 }

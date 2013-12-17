@@ -1,5 +1,5 @@
 #include "testheader.h"
-
+#include "sort.h"
 #define MUL 214013
 #define ADD 2531011
 int seed = 234;
@@ -19,6 +19,7 @@ int main()
 	sys_state(0);
 	heapsort(array, MAXN);
 	sys_state(0);
+	print(array);
 	return 0;
 }
 

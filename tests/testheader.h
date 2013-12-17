@@ -10,5 +10,14 @@
 void sys_putint(int i) {
 	printf("%d\n", i);
 }
+int sys_state(int i) {
+	// just in accordance with unisim system call sys_state
+	return 0;
+}
 #endif
+
+#ifndef MAXN
+#define MAXN 100
+#endif
+
 #endif

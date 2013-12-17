@@ -90,6 +90,7 @@ void execute_stat()
 	printf("valD:\t\t0x%x\n", E_reg.valD);
 	printf("op1:\t\t0x%x\n", E_reg.op1);
 	printf("op2:\t\t0x%x\n", E_reg.op2);
+	printf("op3:\t\t0x%x\n", E_reg.op3);
 	printf("C:\t\t%d\n", E_reg.C);
 	printf("S:\t\t%d\n", E_reg.S);
 	printf("S2:\t\t%d\n", E_reg.S2);

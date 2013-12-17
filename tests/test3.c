@@ -1,4 +1,4 @@
-#include "stdlib.h"
+#include "testheader.h"
 
 int array[] = {2, 1, 5, 4, 3, 6};
 

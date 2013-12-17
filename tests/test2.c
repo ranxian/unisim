@@ -1,4 +1,4 @@
-#include "stdlib.h"
+#include "testheader.h"
 
 int max(int a, int b) {
 	if (a > b)

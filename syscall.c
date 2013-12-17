@@ -8,7 +8,7 @@ int syscall(int callnum)
 {
 	switch (callnum) {
 		case SYS_putint:
-			printf("SYS_putint: %d\n", R(0));
+			printf("%d\n", R(0));
 			break;
 		case SYS_exit:
 			printf("SYS_exit: retval = %d\n", R(0));
@@ -24,7 +24,9 @@ int syscall(int callnum)
         case SYS_umod:
             return (uint32_t)R(0) % (uint32_t)R(1);
         case SYS_state:
+        	#ifdef BENCH
         	printf("%d %d %d %d %d %d\n", inst_cnt, ncycle, nstall, nbubble, nforward, misspred);
+        	#endif
         	return 0;
 		default:
 			printf("unimplemented syscall\n");

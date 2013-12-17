@@ -1,20 +1,11 @@
 #include "testheader.h"
-
+#include "sort.h"
 #define MUL 214013
 #define ADD 2531011
 #ifndef MAXN
 #define MAXN 4
 #endif
 int seed = 234;
-
-void print(int arr[])
-{
-	int i;
-	for (i = 0; i < MAXN; i++)
-	{
-		sys_putint(arr[i]);
-	}
-}
 
 void merge(int arr[],int p,int q,int r)
 {
@@ -66,5 +57,6 @@ int main()
 	sys_state(0);
 	mergeSort(array, 0, MAXN);
 	sys_state(0);
+	print(array);
 	return 0;
 }

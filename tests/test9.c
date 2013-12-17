@@ -1,16 +1,4 @@
-// fabonacci seq
-// qsort test
-#ifndef X86
-#include "stdlib.h"
-#endif
-
-#ifdef X86
-    #include <stdio.h>
-    void sys_putint(int i) {
-        printf("%d\n", i);
-    }
-#endif
-
+#include "testheader.h"
 
 int fab(int n) {
 	if (n == 1 || n == 0)
