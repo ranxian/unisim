@@ -111,6 +111,7 @@ int fetch()
 	f_reg.H = B(ii, 6);
 	f_reg.valP = PC + 4;
 	f_reg.cond = f25_28;
+	f_reg.W = B(ii, 25);
 	PC += 4;
 
 	switch(f29_31) {
