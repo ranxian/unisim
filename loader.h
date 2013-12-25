@@ -2,6 +2,7 @@
 #define LOADER_H
 #include <stdint.h>
 #include <stdio.h>
+#include "memory.h"
 typedef unsigned int 	Elf32_Addr;
 typedef unsigned short 	Elf32_Half;
 typedef unsigned int 	Elf32_Off;
@@ -53,16 +54,6 @@ typedef struct {
 	Elf32_Word p_flags;
 	Elf32_Word p_align;
 } Elf32_Phdr;
-
-#define MAX_SEG_CNT 10
-typedef struct {
-	uint32_t offset; 	// base address
-	uint32_t size;		// size
-	char *content;
-} segment_t;
-
-extern segment_t segments[MAX_SEG_CNT];
-extern uint32_t segment_cnt;
 
 void ehdr_stats(Elf32_Ehdr *hdrp);
 int load_shdrs(FILE *file, Elf32_Ehdr *ehdr, Elf32_Shdr *shdrs);

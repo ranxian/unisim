@@ -17,7 +17,7 @@ int sys_state(int i) {
 #endif
 
 #ifndef MAXN
-#define MAXN 100
+#define MAXN 10
 #endif
 
 #endif

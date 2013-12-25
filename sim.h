@@ -1,6 +1,7 @@
 #ifndef SIM_H
 #define SIM_H
 #include "loader.h"
+#include "cache.h"
 #include <stdint.h>
 
 typedef enum { D_IMM_SH_INST, D_REG_SH_INST, D_IMM_INST, MUL_INST, BRX_INST,
@@ -16,7 +17,7 @@ typedef enum { EQ, NE, UGE, ULT, N, NN, OV, NV, UGT, ULE, SGE, SLT, SGT,
 			   SLE, AL } cond_t;
 
 #define MEMINST(inst) (inst == LSR_OFF_INST || inst == LSHWR_OFF_INST 	\
-						|| inst == LSHWI_OFF_INST || inst == LSI_OFF_INST)			   
+						|| inst == LSHWI_OFF_INST || inst == LSI_OFF_INST)
 
 typedef struct {
 	uint32_t N:1;
@@ -140,6 +141,16 @@ extern d_reg_t f_reg, D_reg;
 extern e_reg_t d_reg, E_reg;
 extern m_reg_t e_reg, M_reg;
 extern w_reg_t m_reg, W_reg;
+extern cache_t icache;
+extern cache_t dcache;
+extern int ncycle;
+extern int halted;
+extern int inst_cnt;
+extern int nforward;
+extern int nstall;
+extern int nbubble;
+extern int misspred;
+extern int F_stall, D_stall, D_bubble, E_bubble;
 
 int simulate(int entry);
 
@@ -161,5 +172,4 @@ int gen_pipe_consig();
 
 int fwdR(int n);
 
-int F_stall, D_stall, D_bubble, E_bubble;
 #endif

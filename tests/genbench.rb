@@ -13,7 +13,7 @@ gccpath = '../../bin/unicore32-linux-gcc-4.4.2'
 `mkdir #{basename}`
 otags.each do |otag|
   scales.each do |scale|
-    cmd = "#{gccpath} #{cflags} #{otag} -D MAXN=#{scale} -o #{basename}/#{basename}#{otag}-#{scale} #{exe}"
+    cmd = "#{gccpath} #{cflags} #{otag} -D MAXN=#{scale} -D BENCH -o #{basename}/#{basename}#{otag}-#{scale} #{exe}"
     puts cmd
     `#{cmd}`
   end

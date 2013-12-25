@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include "helper.h"
 #include "shifter.h"
-#include "mmu.h"
+#include "memory.h"
 #include "extender.h"
 #include "syscall.h"
 
@@ -16,19 +16,33 @@ int nstall = 0;
 int nbubble = 0;
 int misspred = 0;
 
+cache_t icache;
+cache_t dcache;
+
+int regs[REG_NUM];
+int ir;
+stat_reg_t cmsr, temp_cmsr;
+d_reg_t f_reg, D_reg;
+e_reg_t d_reg, E_reg;
+m_reg_t e_reg, M_reg;
+w_reg_t m_reg, W_reg;
+
+int F_stall, D_stall, D_bubble, E_bubble;
+
 int simulate(int entry)
 {
-	int i;
 	int c = 0;
-
+	// 128 sets, 32B block, 2 lines
+	cache_init(&icache, 7, 5, 2);
+	cache_init(&dcache, 7, 5, 2);
 	// init pc
 	PC = entry;
 	// allocate stack
-	SP = alloc_stack();
+	SP = STACK_TOP;
 	// init empty pipeline
 	D_reg.insttype = E_reg.insttype = M_reg.insttype = W_reg.insttype = INOP;
 	while (1) {
-
+		// stage run in the inverse order,
 		writeback();
 
 		memory();
@@ -47,7 +61,7 @@ int simulate(int entry)
 		clock_tick();
 		if (halted)
 			c++;
-		if (c == 2) break;
+		if (c == 5) break;
 		#ifdef DEBUG
 		getchar();
 		#endif
@@ -59,6 +73,7 @@ int simulate(int entry)
 
 int fetch()
 {
+	// forward PC if needed
 	if (M_reg.dstE == 31 && M_reg.WER)  {
 		PC = M_reg.valE;
 		nforward++;
@@ -66,7 +81,7 @@ int fetch()
 		printf("PC forward from M_reg.valE with value 0x%x\n", M_reg.valE);
 		#endif
 	}
-
+	// forward PC if needed
 	if (M_reg.dstM == 31 && M_reg.WMR)  {
 		PC = m_reg.valM;
 		nforward++;
@@ -75,7 +90,7 @@ int fetch()
 		#endif
 	}
 
-	fetch_dword(PC, &ir);
+	cache_fetch(&icache, (char *)&ir, PC, 4);
 	#ifdef DEBUG
 		printf("FETCH STAGE:\n");
 		printf("PC:\t\t0x%x\n", PC);
@@ -83,6 +98,7 @@ int fetch()
 		printdw(ir);
 		printf("-------------------------------------------\n");
 	#endif
+
 	int ii = ir;
 	uint32_t f29_31 = bits(ii, 29, 31);
 	uint32_t f25_28 = bits(ii, 25, 28);
@@ -474,7 +490,9 @@ int memory()
 		int addr;
 		addr = M_reg.P ? M_reg.valE : R(M_reg.dstE);
 		if (!M_reg.WM) {
-			fetch_nbyte(addr, &m_reg.valM, fetchsize);
+			cache_fetch(&dcache, (char *)&m_reg.valM, addr, fetchsize);
+			// printf("0x%x\n", m_reg.valM);
+			// fetch_nbyte(addr, &m_reg.valM, fetchsize);
 			#ifdef DEBUG
 			printf("fetch from address 0x%x with value 0x%x\n", addr, m_reg.valM);
 			#endif
@@ -483,11 +501,16 @@ int memory()
 			printf("wirte to address 0x%x with value 0x%x\n", addr, M_reg.valD);
 			#endif
 			if (B) {
-				write_byte(addr, M_reg.valD & 0xff);
+				int byte = M_reg.valD & 0xff;
+				cache_write(&dcache, addr, (char *)&byte, 1);
+				// write_byte(addr, M_reg.valD & 0xff);
 			} else if (H) {
-				write_byte(addr, M_reg.valD & 0xffff);
+				int hword = M_reg.valD & 0xffff;
+				cache_write(&dcache, addr, (char *)&hword, 2);
+				// write_byte(addr, M_reg.valD & 0xffff);
 			} else {
-				write_word(addr, M_reg.valD);
+				cache_write(&dcache, addr, (char *)&M_reg.valD, 4);
+				// write_word(addr, M_reg.valD);
 			}
 		}
 	}
@@ -613,6 +636,7 @@ int clock_tick()
 
 	if (!D_stall) {
 		D_reg = f_reg;
+	} else {
 		nstall++;
 	}
 	E_reg = d_reg;

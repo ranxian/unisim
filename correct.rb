@@ -17,31 +17,44 @@ end
 
 ntest = 0
 passed = 0
-TESTSUITE.each do |testcase|
-  printf "%-24s", "testing #{testcase}..."
-  unc_compile_cmd = "#{UNIGCC} -static -nostdlib -O1 -o #{testcase} #{TESTDIR}/#{testcase}.c && ./unisim ./#{testcase} > #{testcase}.res"
-  x86_compile_cmd = "gcc -o #{testcase}-X86 -DX86 #{TESTDIR}/#{testcase}.c && ./#{testcase}-X86 > #{testcase}-X86.res"
-  `#{unc_compile_cmd}`
-  `#{x86_compile_cmd}`
+target = ARGV.shift
 
-  f1 = File.open("#{testcase}-X86.res", "r")
-  f2 = File.open("#{testcase}.res", "r")
-
-  ok = true
-  loop do
-    line = f1.gets
-    break unless line
-    line2 = f2.gets
-    if line != line2
-      ok = false and break
+begin
+  TESTSUITE.each do |testcase|
+    next if target && target != testcase
+    printf "%-24s", "testing #{testcase}..."
+    unc_compile_cmd = "#{UNIGCC} -static -nostdlib -O1 -o #{testcase} #{TESTDIR}/#{testcase}.c && ./unisim ./#{testcase} > #{testcase}.res"
+    if target
+      unc_compile_cmd << '&& cat ' + testcase + '.res'
     end
+    x86_compile_cmd = "gcc -o #{testcase}-X86 -DX86 #{TESTDIR}/#{testcase}.c && ./#{testcase}-X86 > #{testcase}-X86.res"
+    res = `#{unc_compile_cmd}`
+    if target
+      puts res
+    end
+    `#{x86_compile_cmd}`
+
+    f1 = File.open("#{testcase}-X86.res", "r")
+    f2 = File.open("#{testcase}.res", "r")
+
+    ok = true
+    loop do
+      line = f1.gets
+      break unless line
+      line2 = f2.gets
+      if line != line2
+        ok = false and break
+      end
+    end
+
+    printf "%30s", ok ? "\e[32m[ PASS ]\e[0m\n" : "\e[31m[ #{"FAIL"} ]\e[0m\n"
+    ntest += 1
+    passed += 1 if ok
   end
 
-  printf "%30s", ok ? "\e[32m[ PASS ]\e[0m\n" : "\e[31m[ #{"FAIL"} ]\e[0m\n"
-  ntest += 1
-  passed += 1 if ok
+  printf "%d/%d tests passed.\n", passed, ntest
+ensure
+  unless target
+    clean
+  end
 end
-
-printf "%d/%d tests passed.\n", passed, ntest
-
-clean

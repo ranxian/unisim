@@ -1,8 +1,11 @@
 exe = './unisim'
 testdir = './tests'
 testexes = ['quicksort', 'mergesort', 'bubblesort', 'selectsort', 'heapsort', 'insertsort']
-testscale = [10, 100, 1000, 10000, 100000]#, 100000, 1000000]
+# testexes = ['quicksort', 'mergesort']
+testscale = [10, 100, 1000, 10000, 100000]#, 1000000]
+# testscale = [100000]#, 100000]#, 100000, 1000000]
 otags = ['-O1', '-O2', '-O3']
+# otags = ['-O1']
 
 target = ARGV.shift
 

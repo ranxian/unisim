@@ -1,15 +1,9 @@
 // qsort test
 #include "testheader.h"
+#include "sort.h"
 #define MUL 214013
 #define ADD 2531011
 int seed = 234;
-void print(int *array)
-{
-    int i;
-    for (i = 0; i < MAXN; i++) {
-        sys_putint(array[i]);
-    }
-}
 
 void swap(int *array, int i, int j)
 {

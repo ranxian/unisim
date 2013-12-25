@@ -3,8 +3,8 @@
 #include <stdint.h>
 #include "loader.h"
 #include "helper.h"
-
 #include <string.h>
+#include "memory.h"
 
 int load_shdrs(FILE *file, Elf32_Ehdr *ehdr, Elf32_Shdr *shdrs)
 {
@@ -54,21 +54,13 @@ void ehdr_stats(Elf32_Ehdr *hdrp)
 int load_psegs(FILE *file, Elf32_Ehdr *ehdr, Elf32_Phdr *phdrs)
 {
 	int i;
-	int word;
 
 	for (i = 0; i < ehdr->e_phnum; i++)
 	{
 		Elf32_Phdr *hdr = phdrs + i;
 		if (hdr->p_type == PT_LOAD) {
 			fseek(file, hdr->p_offset, 0);
-			segments[segment_cnt].offset = hdr->p_vaddr;
-			segments[segment_cnt].size   = hdr->p_memsz;
-			segments[segment_cnt].content = malloc(hdr->p_memsz);
-			fread(segments[segment_cnt].content, 1, hdr->p_filesz, file);
-
-			memcpy(&word, segments[segment_cnt].content, 4);
-			// printdw(word);
-			segment_cnt++;
+			fread(m_memory + hdr->p_vaddr, 1, hdr->p_filesz, file);
 		}
 	}
 	return 0;

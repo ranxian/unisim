@@ -2,17 +2,8 @@
 #include "helper.h"
 #include <stdio.h>
 #include <assert.h>
-#include "mmu.h"
-uint32_t segment_cnt;
-segment_t segments[MAX_SEG_CNT];
-int ir;
-int regs[REG_NUM];
-stat_reg_t cmsr;
-stat_reg_t temp_cmsr;
-d_reg_t f_reg, D_reg;
-e_reg_t d_reg, E_reg;
-m_reg_t e_reg, M_reg;
-w_reg_t m_reg, W_reg;
+#include "memory.h"
+
 #define RESSP (SP = 0x2000000)
 
 void go()
@@ -41,7 +32,6 @@ void go()
 
 void test_instructions()
 {
-	int inst;
 	PC = 0x80000000;
 	SP = alloc_stack();
 	alloc_cs();

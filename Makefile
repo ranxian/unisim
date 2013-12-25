@@ -1,11 +1,11 @@
 CC=gcc
 
 # CFLAGS=-DDEBUG
-CFLAGS=
+CFLAGS=-DBENCH
 
-OBJS=sim.o loader.o helper.o shifter.o mmu.o extender.o syscall.o
+OBJS=sim.o loader.o helper.o shifter.o memory.o extender.o syscall.o cache.o
 
-all: unisim test_sim
+all: unisim test_sim test_cache
 
 unisim:	main.c $(OBJS)
 	$(CC) $(CFLAGS) -o unisim main.c $(OBJS)
@@ -25,8 +25,8 @@ helper.o: helper.c helper.h
 shifter.o: shifter.c shifter.h
 	$(CC) $(CFLAGS) -c shifter.c
 
-mmu.o: mmu.c mmu.h
-	$(CC) $(CFLAGS) -c mmu.c
+memory.o: memory.c memory.h
+	$(CC) $(CFLAGS) -c memory.c
 
 extender.o: extender.c extender.h
 	$(CC) $(CFLAGS) -c extender.c
@@ -36,6 +36,12 @@ test_sim: sim.o test_sim.c
 
 syscall.o: syscall.c syscall.h
 	$(CC) $(CFLAGS) -c syscall.c
+
+cache.o: cache.c cache.h
+	$(CC) $(CFLAGS) -c cache.c
+
+test_cache: $(OBJS) test_cache.c
+	$(CC) $(CFLAGS) -o test_cache $(OBJS) test_cache.c
 
 clean:
 	rm *.o
