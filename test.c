@@ -9,9 +9,7 @@
 void go()
 {
 	fetch(); clock_tick(); 
-	#ifdef DEBUG
-	fetch_stat();
-	#endif
+
 	decode(); clock_tick();
 	#ifdef DEBUG
 	decode_stat();
@@ -32,14 +30,13 @@ void go()
 
 void test_instructions()
 {
-	PC = 0x80000000;
-	SP = alloc_stack();
-	alloc_cs();
+	PC = 0x2000200;
+	SP = STACK_TOP;
 
 	// sub sp, sp, #4
 	ir = 0x24ef4004;
 	fetch(); clock_tick();
-	assert(PC == 0x80000004);
+	assert(PC == 0x2000204);
 	assert(D_reg.rn == 29);
 	assert(D_reg.rd == 29);
 	decode(); clock_tick();
@@ -112,7 +109,7 @@ void test_instructions()
 	regs[20] = 0x1fffff0;
 	regs[19] = 1;
 	write_word(0x1fffff0 + 4, 0xaaaa);
-	fetch(); clock_tick(); fetch_stat();
+	fetch(); clock_tick();
 	decode(); clock_tick();
 	assert(E_reg.op1 == 0x1fffff0);
 	assert(E_reg.op2 == 4);
@@ -252,7 +249,8 @@ void test_instructions()
 
 int main()
 {
-	segment_cnt = 0;
+	mem_init();
 	test_instructions();
+ 	mem_destroy();
 	return 0;
 }

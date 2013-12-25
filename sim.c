@@ -89,8 +89,8 @@ int fetch()
 		printf("PC forward from M_reg.valM with value 0x%x\n", m_reg.valM);
 		#endif
 	}
-
-	cache_fetch(&icache, (char *)&ir, PC, 4);
+	if ((unsigned)PC <= CS_END)
+		cache_fetch(&icache, (char *)&ir, PC, 4);
 	#ifdef DEBUG
 		printf("FETCH STAGE:\n");
 		printf("PC:\t\t0x%x\n", PC);

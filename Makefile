@@ -5,7 +5,7 @@ CFLAGS=-DBENCH
 
 OBJS=sim.o loader.o helper.o shifter.o memory.o extender.o syscall.o cache.o
 
-all: unisim test_sim test_cache
+all: unisim test test_cache
 
 unisim:	main.c $(OBJS)
 	$(CC) $(CFLAGS) -o unisim main.c $(OBJS)
@@ -30,9 +30,6 @@ memory.o: memory.c memory.h
 
 extender.o: extender.c extender.h
 	$(CC) $(CFLAGS) -c extender.c
-
-test_sim: sim.o test_sim.c
-	$(CC) $(CFLAGS) -o test_sim test_sim.c 
 
 syscall.o: syscall.c syscall.h
 	$(CC) $(CFLAGS) -c syscall.c

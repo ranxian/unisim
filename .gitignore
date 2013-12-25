@@ -12,3 +12,5 @@ tests/mergesort*
 tests/heapsort/*
 tests/shellsort/*
 results/*
+test
+test_cache

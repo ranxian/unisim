@@ -24,11 +24,11 @@
 
 void printdw(int dword);
 uint32_t bits(int dword, int start, int end);
-void fetch_stat();
 void decode_stat();
 void execute_stat();
 void memory_stat();
 void writeback_stat();
+void print_cmsr();
 char *INST_NAME(inst_type_t i);
 char *OPCODE_NAME(opcode_t o);
 char *SHIFT_TYPE_NAME(shifttype_t s);
