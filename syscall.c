@@ -25,7 +25,8 @@ int syscall(int callnum)
             return (uint32_t)R(0) % (uint32_t)R(1);
         case SYS_state:
         	#ifdef BENCH
-        	printf("%d %d %d %d %d %d %d %d\n", inst_cnt, ncycle, nstall, nbubble, nforward, misspred, dcache.nmiss, dcache.nhit);
+        	printf("%d %d %d %d %d %d %d %d %d %d\n", inst_cnt, ncycle, nstall, nbubble, nforward, misspred, 
+        		dcache.nmiss, dcache.nhit, icache.nmiss, icache.nhit);
         	#endif
         	return 0;
 		default:

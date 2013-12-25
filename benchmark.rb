@@ -9,6 +9,18 @@ otags = ['-O1', '-O2', '-O3']
 
 target = ARGV.shift
 
+if ENV['BENCH'] == 'small'
+  testexes.pop
+  testexes.pop
+  otags.pop
+  testscale.pop
+end
+
+p testexes
+p otags
+p testscale
+
+`make clean && DFLAGS=-DBENCH make`
 testexes.each do |testexe|
   next if target && testexe != target
   unless File.directory?("results/#{testexe}")

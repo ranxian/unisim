@@ -20,6 +20,7 @@ passed = 0
 target = ARGV.shift
 
 begin
+  `make clean && make`
   TESTSUITE.each do |testcase|
     next if target && target != testcase
     printf "%-24s", "testing #{testcase}..."

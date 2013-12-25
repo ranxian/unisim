@@ -20,7 +20,7 @@ def calc(file, n)
   line1 = file.gets
   line2 = file.gets
   inst_cnt1, ncycle1, nstall1, nbubble1, nforward1, misspred1 = line1.split(" ").map(&:to_i)
-  inst_cnt2, ncycle2, nstall2, nbubble2, nforward2, misspred2, nmiss, nhit = line2.split(" ").map(&:to_i)
+  inst_cnt2, ncycle2, nstall2, nbubble2, nforward2, misspred2, dmiss, dhit, imiss, ihit = line2.split(" ").map(&:to_i)
   
   ncycle = ncycle2 - ncycle1
   nstall = nstall2 - nstall1
@@ -37,7 +37,11 @@ def calc(file, n)
   mpi = Float(misspred) / ninst
   fpi = Float(nforward) / ninst
 
-  return [ninst, cpi, cpe, ipe, bpi, spi, mpi, fpi, nmiss, nhit].map { |f| f.round(2) }
+  mem_access = imiss + ihit + dmiss + dhit
+  icache_hit_rate = Float(ihit) * 100 / (ihit + imiss)
+  dcache_hit_rate = Float(dhit) * 100 / (dhit + dmiss)
+
+  return [ninst, cpi, cpe, ipe, bpi, spi, mpi, fpi, mem_access, icache_hit_rate, dcache_hit_rate].map { |f| f.round(2) }
 end
 
 
@@ -58,7 +62,7 @@ testexes.each do |exe|
 end
 
 table = Terminal::Table.new do |t|
-  t.headings = ['program', 'nInst', 'CPI', 'CPE', 'IPE', 'BPI', 'SPI', 'MPI', 'FPI', 'nMiss', 'nHit']
+  t.headings = ['program', 'nInst', 'CPI', 'CPE', 'IPE', 'BPI', 'SPI', 'MPI', 'FPI', 'MEM', 'IHR(%)', 'DHR(%)']
   t.rows = results
 end
 
