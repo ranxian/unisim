@@ -151,6 +151,7 @@ extern int nstall;
 extern int nbubble;
 extern int misspred;
 extern int F_stall, D_stall, D_bubble, E_bubble;
+extern int icnt[13];
 
 int simulate(int entry);
 

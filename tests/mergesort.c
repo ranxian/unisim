@@ -54,9 +54,13 @@ int main()
 		seed = seed * MUL + ADD;
 		array[i] = seed;
 	}
+    #ifndef HIVEBOARD
 	sys_state(0);
+	#endif
 	mergeSort(array, 0, MAXN);
+    #ifndef HIVEBOARD
 	sys_state(0);
 	print(array);
+	#endif
 	return 0;
 }

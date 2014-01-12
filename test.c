@@ -1,3 +1,4 @@
+/* Used in Multi-Cycle Simulator, no longer used */
 #include "sim.h"
 #include "helper.h"
 #include <stdio.h>
@@ -30,8 +31,11 @@ void go()
 
 void test_instructions()
 {
+	int towrite = 0xaaaa;
 	PC = 0x2000200;
 	SP = STACK_TOP;
+	cache_init(&icache, 7, 5, 2);
+	cache_init(&dcache, 7, 5, 2);
 
 	// sub sp, sp, #4
 	ir = 0x24ef4004;
@@ -88,7 +92,7 @@ void test_instructions()
 	RESSP;
 	go();
 	int word;
-	fetch_dword(SP - 12, &word);
+	mem_read(SP - 12, (char *)&word, 4);
 	assert(word == 0x12345678);
 	assert(cmsr.N == 0 && cmsr.Z == 0 && cmsr.C == 0 && cmsr.V == 0);
 	printf("stw passed\n");
@@ -108,7 +112,8 @@ void test_instructions()
 	regs[21] = 0x1;
 	regs[20] = 0x1fffff0;
 	regs[19] = 1;
-	write_word(0x1fffff0 + 4, 0xaaaa);
+	towrite = 0xaaaa;
+	mem_write(0x1fffff0 + 4, (char *)&towrite, 4);
 	fetch(); clock_tick();
 	decode(); clock_tick();
 	assert(E_reg.op1 == 0x1fffff0);
@@ -124,7 +129,8 @@ void test_instructions()
 	// ldw	r15, [pc+], #188	; 20001ec <add_prime+0xe8>
 	ir = 0x79fbc0bc;
 	PC = 0x200012c;
-	write_word(0x20001ec, 0x020082cc);
+	towrite = 0x020082cc;
+	mem_write(0x20001ec, (char *)&towrite, 4);
 	go();
 	assert(regs[15] == 0x020082cc);
 	assert(PC == 0x2000130);

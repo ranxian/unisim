@@ -24,11 +24,19 @@ int syscall(int callnum)
         case SYS_umod:
             return (uint32_t)R(0) % (uint32_t)R(1);
         case SYS_state:
+        {
         	#ifdef BENCH
-        	printf("%d %d %d %d %d %d %d %d %d %d\n", inst_cnt, ncycle, nstall, nbubble, nforward, misspred, 
-        		dcache.nmiss, dcache.nhit, icache.nmiss, icache.nhit);
+        	printf("%d %d %d %d %d %d %d %d %d %d %d\n", inst_cnt, ncycle, nstall, nbubble, nforward, misspred, 
+        		dcache.nmiss, dcache.nhit, icache.nmiss, icache.nhit, dcache.ndirty);
+        	printf("ALU: %d\n", icnt[0] + icnt[1] + icnt[2] + icnt[3]);
+        	printf("Load/Store: %d\n", icnt[5] + icnt[6] + icnt[7] + icnt[8]);
+        	printf("Cond. Jump: %d\n", icnt[10]);
+        	printf("ST: %d\n", icnt[9]);
+        	printf("Jump: %d\n", icnt[4]);
+
         	#endif
         	return 0;
+        }
 		default:
 			printf("unimplemented syscall\n");
 			return -1;

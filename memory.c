@@ -4,29 +4,14 @@
 
 char *m_memory;
 
-void fetch_nbyte(int addr, void *dest, int len)
+void mem_read(int addr, char *dst, int len)
 {
-	memcpy(dest, V2P(addr), len);
+	memcpy(dst, V2P(addr), len);
 }
 
-void fetch_dword(int addr, void *dest)
+void mem_write(int addr, char *src, int len)
 {
-	fetch_nbyte(addr, dest, 4);
-}
-
-void write_word(int addr, int word)
-{
-	memcpy(V2P(addr), &word, 4);
-}
-
-void write_byte(int addr, char byte)
-{
-	memcpy(V2P(addr), &byte, 1);
-}
-
-void write_hword(int addr, short hword)
-{
-	memcpy(V2P(addr), &hword, 2);
+	memcpy(V2P(addr), src, len);
 }
 
 int mem_init()

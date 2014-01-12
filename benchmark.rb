@@ -5,7 +5,7 @@ testexes = ['quicksort', 'mergesort', 'bubblesort', 'selectsort', 'heapsort', 'i
 testscale = [10, 100, 1000, 10000, 100000]#, 1000000]
 # testscale = [100000]#, 100000]#, 100000, 1000000]
 otags = ['-O1', '-O2', '-O3']
-# otags = ['-O1']
+# otags = ['-O2']
 
 target = ARGV.shift
 

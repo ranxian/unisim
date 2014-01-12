@@ -1,12 +1,12 @@
 #include "sim.h"
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 #include "helper.h"
 #include "shifter.h"
 #include "memory.h"
 #include "extender.h"
 #include "syscall.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 int ncycle = 0;
 int halted = 0;
@@ -15,6 +15,7 @@ int nforward = 0;
 int nstall = 0;
 int nbubble = 0;
 int misspred = 0;
+int icnt[13] = {0};
 
 cache_t icache;
 cache_t dcache;
@@ -29,20 +30,21 @@ w_reg_t m_reg, W_reg;
 
 int F_stall, D_stall, D_bubble, E_bubble;
 
+int alu();
+
 int simulate(int entry)
 {
 	int c = 0;
-	// 128 sets, 32B block, 2 lines
+	// init cache, 128 sets, 32B block, 2 lines
 	cache_init(&icache, 7, 5, 2);
 	cache_init(&dcache, 7, 5, 2);
-	// init pc
+	// init pc and sp
 	PC = entry;
-	// allocate stack
 	SP = STACK_TOP;
 	// init empty pipeline
 	D_reg.insttype = E_reg.insttype = M_reg.insttype = W_reg.insttype = INOP;
 	while (1) {
-		// stage run in the inverse order,
+		// stage run in the inverse order
 		writeback();
 
 		memory();
@@ -53,7 +55,6 @@ int simulate(int entry)
 
 		if (!F_stall) {
 			fetch();
-			nstall++;
 		}
 
 		gen_pipe_consig();
@@ -67,7 +68,8 @@ int simulate(int entry)
 		#endif
 	}
 	printf("%d inst executed\n", inst_cnt);
-	printf("%lf\n", (double)ncycle / inst_cnt);
+	if (inst_cnt != 0)
+		printf("%lf\n", (double)ncycle / inst_cnt);
 	return 0;
 }
 
@@ -89,14 +91,15 @@ int fetch()
 		printf("PC forward from M_reg.valM with value 0x%x\n", m_reg.valM);
 		#endif
 	}
+	// inst fetch from icache
 	if ((unsigned)PC <= CS_END)
 		cache_fetch(&icache, (char *)&ir, PC, 4);
 	#ifdef DEBUG
-		printf("FETCH STAGE:\n");
-		printf("PC:\t\t0x%x\n", PC);
-		printf("inst:\t\t0x%x\n", ir);
-		printdw(ir);
-		printf("-------------------------------------------\n");
+	printf("FETCH STAGE:\n");
+	printf("PC:\t\t0x%x\n", PC);
+	printf("inst:\t\t0x%x\n", ir);
+	printdw(ir);
+	printf("-------------------------------------------\n");
 	#endif
 
 	int ii = ir;
@@ -176,6 +179,7 @@ int fetch()
 	}
 
 	if (f_reg.insttype == ST_INST) {
+		// TODO: if syscall change system status, can't be executed at fetch stage
 		regs[0] = syscall(f_reg.imm24);
 		#ifdef DEBUG
 		printf("%d\n", halted);
@@ -185,153 +189,11 @@ int fetch()
 	return 1;
 }
 
-int alu()
-{
-	uint32_t carry = cmsr.C;
-	int tmp_result;
-	int op1 = E_reg.op1, op2 = E_reg.op2, op3 = E_reg.op3;
-	opcode_t opcode = E_reg.opcode;
-	switch(opcode) {
-		case AND:
-			tmp_result = op1 & op2;
-			break;
-		case XOR:
-			tmp_result = op1 ^ op2;
-			break;
-		case SUB:
-			tmp_result = op1 - op2;
-			break;
-		case RSB:
-			tmp_result = op2 - op1;
-			break;
-		case ADD:
-			tmp_result = op1 + op2;
-			break;
-		case ADC:
-			tmp_result = op1 + op2 + carry;
-			break;
-		case SBC:
-			tmp_result = op1 - op2 + carry - 1;
-			break;
-		case RSC:
-			tmp_result = op2 - op1 + carry - 1;
-			break;
-		case CAND:
-			tmp_result = op1 & op2;
-			break;
-		case CXOR:
-			tmp_result = op1 ^ op2;
-			break;
-		case CSUB:
-			tmp_result = op1 - op2;
-			break;
-		case CADD:
-			tmp_result = op1 + op2;
-			break;
-		case ORR:
-			tmp_result = op1 | op2;
-			break;
-		case MOV:
-			tmp_result = op2;
-			break;
-		case CLB:
-			tmp_result = op1 & (~op2);
-			break;
-		case MVN:
-			tmp_result = ~op2;
-			break;
-		case MUL:
-			tmp_result = op1 * op2 + op3;
-			break;
-		case NOP:
-			tmp_result = op2;
-			break;
-		default:
-			printf("unkown opcode, panic!\n");
-			exit(0);
-	}
-	// set cmsr bit
-
-	if (E_reg.insttype == D_IMM_INST || E_reg.insttype == D_IMM_SH_INST
-		|| E_reg.insttype == D_REG_SH_INST) {
-		if (E_reg.S && E_reg.dstE != 31) {
-			if (opcode == MVN || opcode == MOV) {
-				int c = condman(E_reg.cond);
-				if (!c) goto end;
-			}
-			cmsr.Z = tmp_result == 0;
-			cmsr.N = B(tmp_result, 31);
-			switch (opcode){
-		        case SUB:
-		        case SBC:
-		        case CSUB:
-		        {
-	                cmsr.V = ((((op1^op2)>>31) != 0) && (((tmp_result^op2)>>31) == 0));
-	                cmsr.C = (op1 >= op2);
-	                // cmsr.C = (t < op1 || t < (~op2));
-	                break;
-	            }
-		        case RSB:
-		        case RSC:
-		        {
-	                cmsr.V = ((((op1^op2)>>31) != 0) && (((tmp_result^op1)>>31) == 0));
-	                // cmsr.C = (t < (~op1) || t < op2)
-	                cmsr.C = (op1 < op2);
-	                break;
-	            }
-		        case ADD:
-		        case ADC:
-		        case CADD:
-		        {
-	                cmsr.V = ((((op1^op2)>>31) == 0) && (((tmp_result^op1)>>31) != 0));
-	                unsigned t = tmp_result;
-	                if (opcode == ADC) t -= cmsr.C;
-	                cmsr.C = (t < op1 || t < op2);
-	                break;
-	            }
-		        default:
-	                cmsr.C = E_reg.C;
-	                break;
-	        }
-		}
-	}
-
-	if (E_reg.insttype == MUL_INST && E_reg.S) {
-		cmsr.N = B(tmp_result, 31);
-		cmsr.Z = (tmp_result == 0);
-	}
-
-	end:
-	return tmp_result;
-}
-
-int condman(cond_t c) {
-	switch (c) {
-		case EQ:  return cmsr.Z == 1;
-		case NE:  return cmsr.Z == 0;
-		case UGE: return cmsr.C == 1;
-		case ULT: return cmsr.C == 0;
-		case N:   return cmsr.N == 1;
-		case NN:  return cmsr.N == 0;
-		case OV:  return cmsr.V == 1;
-		case NV:  return cmsr.V == 0;
-		case UGT: return cmsr.C == 1 && cmsr.Z == 0;
-		case ULE: return cmsr.C == 0 || cmsr.Z == 1;
-		case SGE: return cmsr.N == cmsr.V;
-		case SLT: return cmsr.N != cmsr.V;
-		case SGT: return cmsr.Z == 0 && (cmsr.N == cmsr.V);
-		case SLE: return cmsr.Z == 1 || (cmsr.N != cmsr.V);
-		case AL:  return 1;
-		default:  return 1;
-	}
-}
-
 int decode()
 {
 
 	if (D_bubble) {
 		D_reg.insttype = INOP;
-		nbubble++;
 	}
 
 	#ifdef DEBUG
@@ -473,83 +335,10 @@ int decode()
 	return 0;
 }
 
-int memory()
-{
-	#ifdef DEBUG
-		memory_stat();
-	#endif
-	int B = 0, H = 0;
-	int fetchsize = 4;
-	if (M_reg.insttype == LSR_OFF_INST || M_reg.insttype == LSI_OFF_INST)
-		if (M_reg.B) { B = 1; fetchsize = 1; }
-	if (M_reg.insttype == LSHWI_OFF_INST || M_reg.insttype == LSHWR_OFF_INST)
-		if (M_reg.H) { H = 1; fetchsize = 2; }
-
-
-	if (MEM_INST(M_reg.insttype)) {
-		int addr;
-		addr = M_reg.P ? M_reg.valE : R(M_reg.dstE);
-		if (!M_reg.WM) {
-			cache_fetch(&dcache, (char *)&m_reg.valM, addr, fetchsize);
-			// printf("0x%x\n", m_reg.valM);
-			// fetch_nbyte(addr, &m_reg.valM, fetchsize);
-			#ifdef DEBUG
-			printf("fetch from address 0x%x with value 0x%x\n", addr, m_reg.valM);
-			#endif
-		} else {
-			#ifdef DEBUG
-			printf("wirte to address 0x%x with value 0x%x\n", addr, M_reg.valD);
-			#endif
-			if (B) {
-				int byte = M_reg.valD & 0xff;
-				cache_write(&dcache, addr, (char *)&byte, 1);
-				// write_byte(addr, M_reg.valD & 0xff);
-			} else if (H) {
-				int hword = M_reg.valD & 0xffff;
-				cache_write(&dcache, addr, (char *)&hword, 2);
-				// write_byte(addr, M_reg.valD & 0xffff);
-			} else {
-				cache_write(&dcache, addr, (char *)&M_reg.valD, 4);
-				// write_word(addr, M_reg.valD);
-			}
-		}
-	}
-
-	COPY_SBIT(m_reg, M_reg);
-	m_reg.dstE = M_reg.dstE;
-	m_reg.dstM = M_reg.dstM;
-	m_reg.valE = M_reg.valE;
-	m_reg.valP = M_reg.valP;
-	m_reg.S2   = M_reg.S2;
-	m_reg.opcode = M_reg.opcode;
-	m_reg.insttype = M_reg.insttype;
-	m_reg.condval = M_reg.condval;
-	m_reg.WER = M_reg.WER;
-	m_reg.WLR = M_reg.WLR;
-	m_reg.WMR = M_reg.WMR;
-
-	return 0;
-}
-
-int writeback()
-{
-	#ifdef DEBUG
-		writeback_stat();
-	#endif
-	if (W_reg.WER && W_reg.dstE != 31) regs[W_reg.dstE] = W_reg.valE;
-	if (W_reg.WMR && W_reg.dstM != 31) regs[W_reg.dstM] = W_reg.valM;
-	if (W_reg.WLR) regs[30] = W_reg.valP;
-
-	if (W_reg.insttype != INOP)
-		inst_cnt += 1;
-	return 0;
-}
-
 int execute()
 {
 	if (E_bubble) {
 		E_reg.insttype = INOP;
-		nbubble++;
 	}
 
 	#ifdef DEBUG
@@ -567,6 +356,9 @@ int execute()
 	if (E_reg.insttype == BRLK_INST || E_reg.insttype == D_IMM_SH_INST ||
 		E_reg.insttype == D_IMM_INST || E_reg.insttype == D_REG_SH_INST) {
 		e_reg.condval = condman(E_reg.cond);
+		if (e_reg.condval && E_reg.insttype == BRLK_INST) {
+			misspred++;
+		}
 	}
 
 	e_reg.valP = E_reg.valP;
@@ -627,6 +419,213 @@ int execute()
 	return 0;
 }
 
+int alu()
+{
+	uint32_t carry = cmsr.C;
+	int tmp_result;
+	int op1 = E_reg.op1, op2 = E_reg.op2, op3 = E_reg.op3;
+	opcode_t opcode = E_reg.opcode;
+	switch(opcode) {
+		case AND:
+			tmp_result = op1 & op2;
+			break;
+		case XOR:
+			tmp_result = op1 ^ op2;
+			break;
+		case SUB:
+			tmp_result = op1 - op2;
+			break;
+		case RSB:
+			tmp_result = op2 - op1;
+			break;
+		case ADD:
+			tmp_result = op1 + op2;
+			break;
+		case ADC:
+			tmp_result = op1 + op2 + carry;
+			break;
+		case SBC:
+			tmp_result = op1 - op2 + carry - 1;
+			break;
+		case RSC:
+			tmp_result = op2 - op1 + carry - 1;
+			break;
+		case CAND:
+			tmp_result = op1 & op2;
+			break;
+		case CXOR:
+			tmp_result = op1 ^ op2;
+			break;
+		case CSUB:
+			tmp_result = op1 - op2;
+			break;
+		case CADD:
+			tmp_result = op1 + op2;
+			break;
+		case ORR:
+			tmp_result = op1 | op2;
+			break;
+		case MOV:
+			tmp_result = op2;
+			break;
+		case CLB:
+			tmp_result = op1 & (~op2);
+			break;
+		case MVN:
+			tmp_result = ~op2;
+			break;
+		case MUL:
+			tmp_result = op1 * op2 + op3;
+			break;
+		case NOP:
+			tmp_result = op2;
+			break;
+		default:
+			printf("unkown opcode, panic!\n");
+			exit(0);
+	}
+	// set cmsr bit
+
+	if (E_reg.insttype == D_IMM_INST || E_reg.insttype == D_IMM_SH_INST
+		|| E_reg.insttype == D_REG_SH_INST) {
+		if (E_reg.S && E_reg.dstE != 31) {
+			if (opcode == MVN || opcode == MOV) {
+				int c = condman(E_reg.cond);
+				if (!c) goto end;
+			}
+			cmsr.Z = tmp_result == 0;
+			cmsr.N = B(tmp_result, 31);
+			switch (opcode){
+		        case SUB:
+		        case SBC:
+		        case CSUB:
+		        {
+	                cmsr.V = ((((op1^op2)>>31) != 0) && (((tmp_result^op2)>>31) == 0));
+	                cmsr.C = (op1 >= op2);
+	                break;
+	            }
+		        case RSB:
+		        case RSC:
+		        {
+	                cmsr.V = ((((op1^op2)>>31) != 0) && (((tmp_result^op1)>>31) == 0));
+	                cmsr.C = (op1 < op2);
+	                break;
+	            }
+		        case ADD:
+		        case ADC:
+		        case CADD:
+		        {
+	                cmsr.V = ((((op1^op2)>>31) == 0) && (((tmp_result^op1)>>31) != 0));
+	                unsigned t = tmp_result;
+	                if (opcode == ADC) t -= cmsr.C;
+	                cmsr.C = (t < op1 || t < op2);
+	                break;
+	            }
+		        default:
+	                cmsr.C = E_reg.C;
+	                break;
+	        }
+		}
+	}
+
+	if (E_reg.insttype == MUL_INST && E_reg.S) {
+		cmsr.N = B(tmp_result, 31);
+		cmsr.Z = (tmp_result == 0);
+	}
+
+	end:
+	return tmp_result;
+}
+
+int condman(cond_t c) {
+	switch (c) {
+		case EQ:  return cmsr.Z == 1;
+		case NE:  return cmsr.Z == 0;
+		case UGE: return cmsr.C == 1;
+		case ULT: return cmsr.C == 0;
+		case N:   return cmsr.N == 1;
+		case NN:  return cmsr.N == 0;
+		case OV:  return cmsr.V == 1;
+		case NV:  return cmsr.V == 0;
+		case UGT: return cmsr.C == 1 && cmsr.Z == 0;
+		case ULE: return cmsr.C == 0 || cmsr.Z == 1;
+		case SGE: return cmsr.N == cmsr.V;
+		case SLT: return cmsr.N != cmsr.V;
+		case SGT: return cmsr.Z == 0 && (cmsr.N == cmsr.V);
+		case SLE: return cmsr.Z == 1 || (cmsr.N != cmsr.V);
+		case AL:  return 1;
+		default:  return 1;
+	}
+}
+
+int memory()
+{
+	#ifdef DEBUG
+		memory_stat();
+	#endif
+	int B = 0, H = 0;
+	int fetchsize = 4;
+	if (M_reg.insttype == LSR_OFF_INST || M_reg.insttype == LSI_OFF_INST)
+		if (M_reg.B) { B = 1; fetchsize = 1; }
+	if (M_reg.insttype == LSHWI_OFF_INST || M_reg.insttype == LSHWR_OFF_INST)
+		if (M_reg.H) { H = 1; fetchsize = 2; }
+
+
+	if (MEM_INST(M_reg.insttype)) {
+		int addr;
+		addr = M_reg.P ? M_reg.valE : R(M_reg.dstE);
+		if (!M_reg.WM) {
+			cache_fetch(&dcache, (char *)&m_reg.valM, addr, fetchsize);
+			#ifdef DEBUG
+			printf("fetch from address 0x%x with value 0x%x\n", addr, m_reg.valM);
+			#endif
+		} else {
+			#ifdef DEBUG
+			printf("wirte to address 0x%x with value 0x%x\n", addr, M_reg.valD);
+			#endif
+			if (B) {
+				int byte = M_reg.valD & 0xff;
+				cache_write(&dcache, addr, (char *)&byte, 1);
+			} else if (H) {
+				int hword = M_reg.valD & 0xffff;
+				cache_write(&dcache, addr, (char *)&hword, 2);
+			} else {
+				cache_write(&dcache, addr, (char *)&M_reg.valD, 4);
+			}
+		}
+	}
+
+	COPY_SBIT(m_reg, M_reg);
+	m_reg.dstE = M_reg.dstE;
+	m_reg.dstM = M_reg.dstM;
+	m_reg.valE = M_reg.valE;
+	m_reg.valP = M_reg.valP;
+	m_reg.S2   = M_reg.S2;
+	m_reg.opcode = M_reg.opcode;
+	m_reg.insttype = M_reg.insttype;
+	m_reg.condval = M_reg.condval;
+	m_reg.WER = M_reg.WER;
+	m_reg.WLR = M_reg.WLR;
+	m_reg.WMR = M_reg.WMR;
+
+	return 0;
+}
+
+int writeback()
+{
+	#ifdef DEBUG
+		writeback_stat();
+	#endif
+	if (W_reg.WER && W_reg.dstE != 31) regs[W_reg.dstE] = W_reg.valE;
+	if (W_reg.WMR && W_reg.dstM != 31) regs[W_reg.dstM] = W_reg.valM;
+	if (W_reg.WLR) regs[30] = W_reg.valP;
+
+	if (W_reg.insttype != INOP)
+		inst_cnt += 1;
+	icnt[W_reg.insttype]++;
+	return 0;
+}
+
 int clock_tick()
 {
 	#ifdef DEBUG
@@ -636,9 +635,7 @@ int clock_tick()
 
 	if (!D_stall) {
 		D_reg = f_reg;
-	} else {
-		nstall++;
-	}
+	} 
 	E_reg = d_reg;
 	M_reg = e_reg;
 	W_reg = m_reg;
@@ -659,7 +656,6 @@ static inline int PCChange()
 	if ((E_reg.dstE == 31 && e_reg.WER) ||
 			(E_reg.dstM == 31 && e_reg.WMR) ||
 			(E_reg.dstM == 31 && e_reg.WLR)) {
-		misspred++;
 		#ifdef DEBUG
 		printf("PCChanging\n");
 		#endif
@@ -672,22 +668,26 @@ int gen_pipe_consig()
 	// Fetch stage stall or bubble
 	if (LUtrigger()) {
 		F_stall = 1;
+		nstall++;
 	} else F_stall = 0;
 
 	// Decode stage stall or bubble
 	if (LUtrigger()) {
 		D_stall = 1;
+		nstall++;
 	} else D_stall = 0;
 
 	if (// Conditional jump
 		PCChange() && !D_stall) {
 		D_bubble = 1;
+		nbubble++;
 	} else D_bubble = 0;
 
 	// Execute stage stall or bubble
 	if (// Conditional jump and LU
 		PCChange() || LUtrigger()) {
 		E_bubble = 1;
+		nbubble++;
 	} else E_bubble = 0;
 
 	if (F_stall) {
@@ -765,5 +765,4 @@ int fwdR(int n)
 	nforward--;
 
 	return R(n);
-
 }

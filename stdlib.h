@@ -14,14 +14,14 @@ typedef int          off_t;
 static volatile __attribute__ ((noinline, naked)) ret_type\
  name(\
 arg1_type arg1_name){\
-        asm volatile ("jepriv #"#num ";jump lr; nop; nop; nop;");}
+        asm volatile ("jepriv #"#num ";jump lr; nop; nop; nop; nop;");}
 
 #define syscall2(num, name, ret_type, arg1_type, arg1_name, arg2_type, arg2_name) \
 static volatile __attribute__ ((noinline, naked)) ret_type\
  name(\
 arg1_type arg1_name, \
 arg2_type arg2_name){\
-        asm volatile ("jepriv #"#num ";jump lr; nop; nop; nop;");}
+        asm volatile ("jepriv #"#num ";jump lr; nop; nop; nop; nop;");}
 
 #define syscall3(num, name, ret_type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name) \
 static volatile __attribute__ ((noinline, naked)) ret_type\
@@ -29,7 +29,7 @@ static volatile __attribute__ ((noinline, naked)) ret_type\
 arg1_type arg1_name, \
 arg2_type arg2_name, \
 arg3_type arg3_name){\
-         asm volatile ("jepriv #"#num ";jump lr; nop; nop; nop;");}
+         asm volatile ("jepriv #"#num ";jump lr; nop; nop; nop; nop;");}
 
 // void exit(int status);
 syscall1(0x900001, sys_exit, int, int, status);

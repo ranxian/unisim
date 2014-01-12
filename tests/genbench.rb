@@ -11,9 +11,12 @@ exes.each do |exe|
   `mkdir #{exe}` if !File.directory?(exe)
   otags.each do |otag|
     scales.each do |scale|
-      cmd = "#{gccpath} #{cflags} #{otag} -D MAXN=#{scale} -D BENCH -o #{exe}/#{exe}#{otag}-#{scale} #{exe}.c"
-      puts cmd
-      `#{cmd}`
+      cmd1 = "#{gccpath} #{cflags} #{otag} -D MAXN=#{scale} -D BENCH -o #{exe}/#{exe}#{otag}-#{scale} #{exe}.c"
+      cmd2 = "#{gccpath} #{cflags} #{otag} -D MAXN=#{scale} -D BENCH -D HIVEBOARD -o #{exe}/#{exe}#{otag}-#{scale}-HB #{exe}.c"
+      puts cmd1
+      `#{cmd1}`
+      puts cmd2
+      `#{cmd2}`
     end
   end
 end

@@ -1,24 +1,23 @@
 #### D_IMM_SH_INST, D_REG_SH_INST, D_IMM_INST
 
 Fetch:
-	inst_type;
+	get inst_type;
 	split_inst;
 	valP = pc + 4;
 	pc += 4;
 Decode:
 	op1 = rn;
 	op2 = rm <shifttype> shift_imm;
-	// D_REG_SH_INST:	op2 = rm <shifttype> rs;
-	// D_IMM_INST:		op2 = imm <> rotate;
+	# D_REG_SH_INST:	op2 = rm <shifttype> rs;
+	# D_IMM_INST:		op2 = imm <> rotate;
 	set_cc;
 	dstE = rd;
 Execute:
 	valE = op1 OP op2;
 	if (LOG_INST || S && rd != 31)
 		update cmsr;
-	
 Memory:
-
+	# no op
 Write-back:
 	if (!LOG_INST) 
 		regs[dstE] = valE;
@@ -30,7 +29,6 @@ Fetch:
 Decode:
 	op1 = rn;
 	op2 = rm;
-
 	dstE = rd;
 Execute:
 	valE = op1 mul op2;
@@ -63,8 +61,8 @@ Fetch:
 	the same.
 Decode:
 	op1 = rn;
-	op2 = imm14; // LSI_OFF_INST;
-	// op2 = rm <shifttype> shift_imm;
+	op2 = imm14; # LSI_OFF_INST;
+	# LSR_OFF_INST: op2 = rm <shifttype> shift_imm;
 	valD = regs[rd];
 	dstE = rn;
 	dstM = rd;
@@ -86,7 +84,7 @@ Fetch:
 Decode:
 	op1 = rn;
 	op2 = imm10;
-	// op2 = rm;
+	# LSHWR_OFF_INST: op2 = rm;
 	valD = regs[rd];
 	dstE = rn;
 	dstM = rd;
@@ -98,7 +96,7 @@ Memory:
 	if (L) valM = H ? M[addr, 2] : M[addr, 4];
 	else H ? M[addr, 2] = valD : M[addr, 4] = valD;
 Write-back:
-	if (load) regs[dstM] = valM; // look at S2 to see if sign extend is needed
+	if (load) regs[dstM] = valM; # look at S2 to see if sign extend is needed
 	if (!P || W) regs[dstE] = valE;
 
 #### BRLK_INST
@@ -113,7 +111,7 @@ Execute:
 	valE = op1 + op2;
 	cond = CALC_COND;
 Memory:
-	//
+	# no op
 Write-back:
 	if (cond) {
 		regs[dstE] = valE;
@@ -121,7 +119,8 @@ Write-back:
 	}
 
 #### ST_INST
-# special case.
+# syscall, special case, excute when fetch
+# do not walk follow pipeline
 Fetch:
 
 Decode: 

@@ -8,14 +8,5 @@ int fab(int n) {
 
 int main()
 {
-	// sys_putint(fab(1));
-	sys_putint(fab(2));
-	sys_putint(fab(3));
-	sys_putint(fab(4));
-	sys_putint(fab(5));
-	sys_putint(fab(6));
-	sys_putint(fab(7));
-	sys_putint(fab(8));
-	sys_putint(fab(20));
-
+	fab(35);
 }

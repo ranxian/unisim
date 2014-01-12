@@ -10,15 +10,9 @@
 
 #define V2P(addr) (m_memory + addr)
 
-void fetch_nbyte(int addr, void *dest, int len);
+void mem_read(int addr, char *dst, int len);
 
-void fetch_dword(int addr, void *dest);
-
-void write_word(int addr, int word);
-
-void write_byte(int addr, char byte);
-
-void write_hword(int addr, short hword);
+void mem_write(int addr, char *src, int len);
 
 int mem_init();
 

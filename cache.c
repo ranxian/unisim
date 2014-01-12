@@ -56,12 +56,13 @@ int cache_init(cache_t * cache, int s, int b, int E)
 	cache->S = power2(s);
 	cache->B = power2(b);
 	cache->t = 32 - s - b;
-	cache->nmiss = cache->nhit = 0;
+	cache->nmiss = cache->nhit = cache->ndirty = 0;
 	int i, j;
 	for (i = 0; i < cache->S; i++) {
 		for (j = 0; j < cache->E; j++) {
 			cache->lines[i][j].valid = 0;
 			cache->lines[i][j].atcycle = 0;
+			cache->lines[i][j].dirty = 0;
 		}
 	}
 	return 0;
@@ -72,10 +73,9 @@ static cache_line_t *find_line(cache_t *cache, int address)
 	int S = extract_s(cache, address);
 	int tag = extract_tag(cache, address);
 
-	cache_line_t *line;
-
 	int i;
 	for (i = 0; i < cache->E; i++) {
+		cache_line_t *line;		
 		line = &cache->lines[S][i];
 		if (line->valid && line->tag == tag) {
 			line->atcycle = ncycle;
@@ -89,14 +89,11 @@ static int cache_insert(cache_t *cache, int address)
 {
 	address = ALIGN(address, cache->B);
 	int S = extract_s(cache, address);
-	int B = extract_b(cache, address);
-	assert(B == 0);
 	int tag = extract_tag(cache, address);
 	int i;
 	for (i = 0; i < cache->E; i++) {
 		cache_line_t *line = &cache->lines[S][i];
 		if (line->valid == 0) {
-			// fetch_nbyte(address, line->block, cache->B);
 			line->valid = 1;
 			line->tag = tag;
 			line->atcycle = ncycle;
@@ -115,8 +112,9 @@ static int cache_insert(cache_t *cache, int address)
 	}
 
 	if (out) {
-		// fetch_nbyte(address, out->block, cache->B);
-
+		if (out->dirty)
+			cache->ndirty++;
+		out->dirty = 0;
 		out->tag = tag;
 		out->atcycle = ncycle;
 	}
@@ -126,15 +124,13 @@ static int cache_insert(cache_t *cache, int address)
 
 static int cache_fetchw(cache_t *cache, char *dest, int src)
 {
-	// int B = extract_b(cache, src);
 	cache_line_t *line = find_line(cache, src);
 	if (line != NULL) {
 		cache->nhit++;
-		fetch_dword(src, dest);
-		// memcpy(dest, line->block + B, 4);
+		mem_read(src, dest, 4);
 	} else {
 		cache->nmiss++;
-		fetch_dword(src, dest);
+		mem_read(src, dest, 4);
 		cache_insert(cache, src);
 	}
 	return 0;
@@ -142,11 +138,10 @@ static int cache_fetchw(cache_t *cache, char *dest, int src)
 
 static int cache_writew(cache_t *cache, int dest, char *dsrc)
 {
-	int B = extract_b(cache, dest);
 	cache_line_t *line = find_line(cache, dest);
-	write_word(dest, *(int *)dsrc);
+	mem_write(dest, dsrc, 4);
 	if (line != NULL) {
-		// memcpy(line->block + B, dsrc, 4);
+		line->dirty = 1;
 		return 0;
 	} else {
 		cache_insert(cache, dest);
@@ -156,7 +151,6 @@ static int cache_writew(cache_t *cache, int dest, char *dsrc)
 
 int cache_fetch(cache_t *cache, char *dest, int src, int size)
 {
-	// printf("fetch\n");
 	while (size > 0) {
 		cache_fetchw(cache, dest, src);
 		dest += 4; src += 4; size -= 4;
@@ -175,7 +169,6 @@ int cache_write(cache_t *cache, int dest, char *dsrc, int size)
 		}
 		dest += 4; dsrc += 4; size -= 4;
 	}
-
 
 	return 0;
 }

@@ -9,6 +9,7 @@ typedef struct {
 	int valid;
 	int tag;
 	int atcycle;
+	int dirty;
 } cache_line_t;
 
 typedef struct {
@@ -20,6 +21,7 @@ typedef struct {
 	int t;
 	int nmiss;
 	int nhit;
+	int ndirty;
 	cache_line_t lines[MAX_SET_SIZE][MAX_CL_SIZE];
 } cache_t;
 
